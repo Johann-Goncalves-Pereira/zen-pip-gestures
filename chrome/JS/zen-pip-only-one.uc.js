@@ -8,11 +8,27 @@
  * When a new PiP opens, close every other PiP window so only one remains.
  *
  * Pref: zen.pip.onlyOne.enabled (default true)
+ *
+ * Closing must scrub Firefox's PiP WeakMaps — raw win.close() alone leaves
+ * browserWeakMap / weakAutoPipBrowserToParent dirty and breaks auto-PiP.
  */
 (function () {
   "use strict";
 
   const PREF = "zen.pip.onlyOne.enabled";
+
+  let PictureInPicture = null;
+  for (const uri of [
+    "moz-src:///toolkit/components/pictureinpicture/PictureInPicture.sys.mjs",
+    "resource://gre/modules/PictureInPicture.sys.mjs",
+  ]) {
+    try {
+      PictureInPicture = ChromeUtils.importESModule(uri).PictureInPicture;
+      break;
+    } catch (_) {
+      /* try next */
+    }
+  }
 
   function enabled() {
     try {
@@ -49,6 +65,43 @@
     return out;
   }
 
+  function closePipWindowClean(win) {
+    if (!win || win.closed) {
+      return;
+    }
+    try {
+      const browser = PictureInPicture?.weakWinToBrowser?.get(win);
+      if (browser && PictureInPicture) {
+        const actor =
+          PictureInPicture.weakAutoPipBrowserToParent?.get(browser) || null;
+        if (actor) {
+          PictureInPicture.closeSinglePipWindow({
+            reason: "Unpip",
+            actorRef: actor,
+          });
+          return;
+        }
+        try {
+          PictureInPicture.removePiPBrowserFromWeakMap?.(browser);
+        } catch (_) {
+          /* ignore */
+        }
+        try {
+          PictureInPicture.weakAutoPipBrowserToParent?.delete(browser);
+        } catch (_) {
+          /* ignore */
+        }
+      }
+    } catch (_) {
+      /* fall through */
+    }
+    try {
+      win.close();
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
   /** Keep `keep` open; close every other PiP. */
   function closeOthers(keep) {
     if (!enabled()) {
@@ -58,11 +111,7 @@
       if (win === keep) {
         continue;
       }
-      try {
-        win.close();
-      } catch (_) {
-        /* ignore */
-      }
+      closePipWindowClean(win);
     }
   }
 
@@ -83,11 +132,9 @@
       }
       const win = subject;
       try {
-        win.addEventListener(
-          "DOMContentLoaded",
-          () => onPipOpened(win),
-          { once: true }
-        );
+        win.addEventListener("DOMContentLoaded", () => onPipOpened(win), {
+          once: true,
+        });
       } catch (_) {
         /* ignore */
       }

@@ -105,17 +105,9 @@
   /** Close every open PiP so a new AutoToggle can replace it (Arc-like). */
   function closeAllPips() {
     try {
-      if (window.ZenPipOnlyOne?.closeAll) {
-        window.ZenPipOnlyOne.closeAll();
-        return;
-      }
-    } catch (_) {
-      /* fall through */
-    }
-    try {
       for (const win of Services.wm.getEnumerator("Toolkit:PictureInPicture")) {
         if (win && !win.closed) {
-          win.close();
+          closePipWindowClean(win);
         }
       }
     } catch (_) {
@@ -253,27 +245,86 @@
     return false;
   }
 
-  function browserAlreadyHasPip(browser) {
+  /** Live PiP player window still mapped to this browser (not a stale WeakMap). */
+  function livePipWindowForBrowser(browser) {
+    if (!browser || !PictureInPicture?.weakWinToBrowser) {
+      return null;
+    }
     try {
-      if (PictureInPicture?.browserWeakMap?.has(browser)) {
-        return true;
-      }
-      if (PictureInPicture?.weakAutoPipBrowserToParent?.has(browser)) {
-        return true;
-      }
-      if (PictureInPicture?.weakWinToBrowser) {
-        for (const win of Services.wm.getEnumerator(
-          "Toolkit:PictureInPicture"
-        )) {
-          if (PictureInPicture.weakWinToBrowser.get(win) === browser) {
-            return true;
-          }
+      for (const win of Services.wm.getEnumerator("Toolkit:PictureInPicture")) {
+        if (win && !win.closed && PictureInPicture.weakWinToBrowser.get(win) === browser) {
+          return win;
         }
       }
     } catch (_) {
       /* ignore */
     }
-    return false;
+    return null;
+  }
+
+  function browserAlreadyHasPip(browser) {
+    return !!livePipWindowForBrowser(browser);
+  }
+
+  /**
+   * Raw `win.close()` leaves browserWeakMap / weakAutoPipBrowserToParent dirty,
+   * so later AutoToggle attempts stick on skip-already-pip. Prefer Firefox's
+   * closeSinglePipWindow; otherwise scrub maps then close.
+   */
+  function closePipWindowClean(win) {
+    if (!win || win.closed) {
+      return;
+    }
+    try {
+      const browser = PictureInPicture?.weakWinToBrowser?.get(win);
+      if (browser && PictureInPicture) {
+        const actor =
+          PictureInPicture.weakAutoPipBrowserToParent?.get(browser) || null;
+        if (actor) {
+          // "Unpip" is not a deliberate-close reason (won't suppress auto-PiP).
+          PictureInPicture.closeSinglePipWindow({
+            reason: "Unpip",
+            actorRef: actor,
+          });
+          return;
+        }
+        try {
+          PictureInPicture.removePiPBrowserFromWeakMap?.(browser);
+        } catch (_) {
+          /* ignore */
+        }
+        try {
+          PictureInPicture.weakAutoPipBrowserToParent?.delete(browser);
+        } catch (_) {
+          /* ignore */
+        }
+      }
+    } catch (_) {
+      /* fall through to close */
+    }
+    try {
+      win.close();
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function clearStalePipMaps(browser) {
+    if (!browser || !PictureInPicture) {
+      return;
+    }
+    try {
+      if (PictureInPicture.browserWeakMap?.has(browser)) {
+        PictureInPicture.browserWeakMap.delete(browser);
+      }
+    } catch (_) {
+      /* ignore */
+    }
+    try {
+      PictureInPicture.weakAutoPipBrowserToParent?.delete(browser);
+    } catch (_) {
+      /* ignore */
+    }
   }
 
   function getSelectedBrowser(chromeWin) {
@@ -296,16 +347,13 @@
         /* fall through */
       }
     }
-    try {
-      for (const win of Services.wm.getEnumerator("Toolkit:PictureInPicture")) {
-        if (win && !win.closed) {
-          win.close();
-        }
-      }
+    const live = livePipWindowForBrowser(browser);
+    if (live) {
+      closePipWindowClean(live);
       return true;
-    } catch (_) {
-      return false;
     }
+    clearStalePipMaps(browser);
+    return false;
   }
 
   async function tryAutoPipForBrowser(chromeWin, browser, reason) {
@@ -317,18 +365,31 @@
       mark("skip-no-browser:" + reason);
       return;
     }
-    if (browserAlreadyHasPip(browser)) {
+
+    // Stale maps after a raw win.close() look like "already pip" with no window.
+    if (!livePipWindowForBrowser(browser)) {
+      if (
+        PictureInPicture?.browserWeakMap?.has(browser) ||
+        PictureInPicture?.weakAutoPipBrowserToParent?.has(browser)
+      ) {
+        clearStalePipMaps(browser);
+        mark("cleared-stale:" + reason);
+      }
+    } else {
       mark("skip-already-pip:" + reason);
       return;
     }
+
     // Arc-like: replace any other PiP instead of stacking or skipping.
     if (anyPipOpen()) {
       if (!onlyOneEnabled()) {
-        mark("skip-already-pip:" + reason);
+        mark("skip-other-pip:" + reason);
         return;
       }
       closeAllPips();
       mark("replaced-other-pip:" + reason);
+      // Let Firefox finish unload / map cleanup before AutoToggle.
+      await new Promise((r) => chromeWin.setTimeout(r, 50));
     }
 
     const wgp = browser.browsingContext?.currentWindowGlobal;
@@ -349,31 +410,37 @@
       return;
     }
 
-    const wasActive = !!browser.docShellIsActive;
+    // Do NOT set docShellIsActive=false before AutoToggle. That can pause the
+    // video before the child's videoIsPlaying check (esp. Space/deactivate).
     try {
-      browser.docShellIsActive = false;
       actor.sendAsyncMessage("PictureInPicture:AutoToggle");
       mark("autotoggle-sent:" + reason);
     } catch (ex) {
       mark("autotoggle-fail:" + ex);
-      try {
-        browser.docShellIsActive = wasActive;
-      } catch (_) {
-        /* ignore */
-      }
       return;
     }
 
-    await new Promise((r) => chromeWin.setTimeout(r, 500));
-    if (anyPipOpen()) {
+    await new Promise((r) => chromeWin.setTimeout(r, 700));
+    if (anyPipOpen() || livePipWindowForBrowser(browser)) {
       openedByUs.add(browser);
       mark("opened:" + reason);
-    } else if (wasActive) {
-      try {
-        browser.docShellIsActive = true;
-      } catch (_) {
-        /* ignore */
-      }
+      return;
+    }
+
+    // One retry — first pass can race tab freeze / Space animation.
+    try {
+      actor.sendAsyncMessage("PictureInPicture:AutoToggle");
+      mark("autotoggle-retry:" + reason);
+    } catch (ex) {
+      mark("autotoggle-retry-fail:" + ex);
+      mark("no-pip:" + reason);
+      return;
+    }
+    await new Promise((r) => chromeWin.setTimeout(r, 700));
+    if (anyPipOpen() || livePipWindowForBrowser(browser)) {
+      openedByUs.add(browser);
+      mark("opened-retry:" + reason);
+    } else {
       mark("no-pip:" + reason);
     }
   }
