@@ -246,6 +246,14 @@ if [[ -d /Applications/Zen.app && ! -L /Applications/Zen.app ]]; then
   say "  sudo rm -rf /Applications/Zen.app && sudo ln -s \"$DST_APP\" /Applications/Zen.app"
 fi
 
+# Auto-repatch after Zen updates (LaunchAgent watches Zen.app)
+if [[ "${ZEN_PIP_SKIP_LAUNCH_AGENT:-0}" != "1" ]]; then
+  say "${BLD}🛰️${RST} Installing auto-repatch LaunchAgent…"
+  bash "$REPO_ROOT/scripts/install-launch-agent.sh" \
+    && ok "Will re-patch automatically after Zen updates" \
+    || warn "LaunchAgent install failed — you can re-run: $REPO_ROOT/scripts/install-launch-agent.sh"
+fi
+
 # ---------------------------------------------------------------------------
 say ""
 say "${GRN}${BLD}🎉 Done!${RST}"
@@ -258,6 +266,7 @@ say "     (Zen will restart)"
 say "  3️⃣  Play a video → click PiP → two-finger drag to move, pinch to resize ✨"
 say ""
 say "📌 Pin ${BLD}~/Applications/Zen.app${RST} to your Dock. Prefer that over /Applications."
+say "🛰️ After Zen updates, a background agent re-patches automatically (notification)."
 say ""
 say "🔎 Verify files:"
 ls -la "$ZEN_RES/config.js" \

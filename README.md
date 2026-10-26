@@ -87,7 +87,7 @@ Then same steps 4–6 as Option A. 👆
 
 | | Warning | Why it matters |
 |---|---|---|
-| 🔁 | **Re-run `./install.sh` after every Zen update** | Updates replace the app and wipe `config.js`. |
+| 🛰️ | **Auto-repatch is on after install** | A LaunchAgent re-patches when Zen updates wipe `config.js`. Still quit & reopen Zen (and clear startup cache if gestures stay dead). |
 | 🎯 | **Launch the patched app** | `/Applications/Zen.app` will **not** have gestures if you only patched `~/Applications`. |
 | 🧹 | **Clear startup cache once** | Without this, old chrome cache may ignore new scripts. |
 | 🧪 | **This is unofficial** | Not affiliated with Zen. UserChromeJS can break after Zen updates. |
@@ -156,6 +156,9 @@ Then: open `~/Applications/Zen.app` → **Clear startup cache** once. 🧹
 ## 🗑️ Uninstall
 
 ```bash
+# 0. Stop auto-repatch
+~/Developer/programs/zen-pip-gestures/scripts/uninstall-launch-agent.sh
+
 # 1. Remove scripts from your profile
 PROFILE="$HOME/Library/Application Support/zen/Profiles/YOUR_PROFILE"
 rm -f "$PROFILE/chrome/JS/zen-pip-"*.uc.js
@@ -218,13 +221,31 @@ Expected 🙂. This project **never** requires writing into SIP-protected `/Appl
 
 ### 💔 Works, then breaks after a Zen update
 
-Zen updates replace the app bundle. Run:
+**Usually automatic now.** `./install.sh` installs a LaunchAgent (`com.zen-pip-gestures.repatch`) that watches Zen.app. When an update wipes `config.js`, it re-patches and shows a macOS notification.
+
+Then: **quit & reopen Zen**. If gestures still fail → **Clear startup cache**.
+
+Manual fallback:
 
 ```bash
 cd ~/Developer/programs/zen-pip-gestures && git pull && ./install.sh
+# or just:
+~/Developer/programs/zen-pip-gestures/scripts/repatch-on-update.sh
 ```
 
-Then clear startup cache again. 🧹
+Disable auto-repatch:
+
+```bash
+~/Developer/programs/zen-pip-gestures/scripts/uninstall-launch-agent.sh
+```
+
+Re-enable:
+
+```bash
+~/Developer/programs/zen-pip-gestures/scripts/install-launch-agent.sh
+```
+
+Logs: `~/Library/Logs/zen-pip-gestures.log`
 
 ### 👻 Cursor visible / escapes the PiP while dragging
 
@@ -267,7 +288,7 @@ Gestures (pan/pinch) do not depend on auto-PiP. 👍
 | 📦 `Failed to unpack fx-autoconfig` | Bad zip / disk full | Retry; free disk space 💾 |
 | 🔏 `codesign` fails | Rare toolchain issue | `xcode-select --install` 🧰 |
 | 🤷 Gestures missing but no error | Opened stock `/Applications` Zen | `open ~/Applications/Zen.app` 🎯 |
-| 💔 Gestures missing after update | App bundle replaced | `./install.sh` + clear startup cache 🧹 |
+| 💔 Gestures missing after update | App bundle replaced | Wait for notification / run `scripts/repatch-on-update.sh`, then reopen Zen + clear startup cache 🧹 |
 | 🔗 `curl: (22) … 404` on install URL | Typo / repo renamed | Use clone Option B 🧰 |
 | 👻 PiP moves but cursor leaves window | Outdated script | `git pull && ./install.sh` 🔄 |
 | 🚫 macOS says app is damaged | Quarantine / signature | `xattr -cr` + `codesign` above 🛡️ |
@@ -280,6 +301,10 @@ Gestures (pan/pinch) do not depend on auto-PiP. 👍
 zen-pip-gestures/
   install.sh                          ← 🚀 run this
   README.md                           ← 📖 you are here
+  scripts/
+    repatch-on-update.sh              ← 🛰️ auto-fix after Zen updates
+    install-launch-agent.sh           ← enable auto-repatch
+    uninstall-launch-agent.sh         ← disable auto-repatch
   chrome/
     JS/
       zen-pip-gestures.uc.js          ← 👆 pan / pinch
