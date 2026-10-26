@@ -4,3 +4,7 @@
 .vscode/
 *.swp
 *~
+/zen-pip-install
+/zen-pip-install-darwin-*
+/dist/
+

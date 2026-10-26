@@ -1,0 +1,32 @@
+/* Injected companion for zen-pip-no-traffic-lights.uc.js (PiP has no userChrome.css). */
+
+:root #titlebar,
+:root toolbox#navigator-toolbox,
+:root .titlebar-spacer {
+  display: none !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+}
+
+:root #zen-pip-buttonbox-anchor {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+:root,
+body,
+.player-holder {
+  margin: 0 !important;
+  padding: 0 !important;
+}

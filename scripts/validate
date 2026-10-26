@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Portable quality gate for this repo (Go TUI + shell helpers).
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+echo "==> sync embed assets"
+mkdir -p internal/assets/chrome internal/assets/scripts
+rsync -a --delete chrome/ internal/assets/chrome/
+rsync -a \
+  scripts/repatch-on-update.sh \
+  scripts/install-launch-agent.sh \
+  scripts/uninstall-launch-agent.sh \
+  internal/assets/scripts/
+
+echo "==> gofmt"
+bad="$(gofmt -l . | grep -v '^$' || true)"
+if [[ -n "$bad" ]]; then
+  echo "gofmt needed on:" >&2
+  echo "$bad" >&2
+  exit 1
+fi
+
+echo "==> go vet"
+go vet ./...
+
+echo "==> go test"
+go test ./...
+
+echo "validate OK"

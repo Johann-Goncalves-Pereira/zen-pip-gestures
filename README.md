@@ -26,60 +26,48 @@ Inspired by [zen-browser/desktop#15905](https://github.com/zen-browser/desktop/p
 
 ## 🚀 Install (one command)
 
-### ⚡ Option A — fastest (no git knowledge needed)
+The one-liner downloads a **Charm TUI** binary from [GitHub Releases](https://github.com/Johann-Goncalves-Pereira/zen-pip-gestures/releases) and walks you through checks, profile pickers, and common-error recovery.
 
-1. 🛑 Quit Zen completely (`Cmd+Q`).
-2. 🖥️ Open **Terminal** (Spotlight → type `Terminal`).
-3. 📋 Paste this **entire** line and press Enter:
+1. 🖥️ Open **Terminal**.
+2. 📋 Paste:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Johann-Goncalves-Pereira/zen-pip-gestures/main/install.sh | bash
 ```
 
-4. 🎉 When it finishes, run exactly what it prints (usually):
+3. Follow the TUI:
+   - If Zen is missing → shows official install (`brew install --cask zen-browser` / [zen-browser.app](https://zen-browser.app)) and asks to retry
+   - ✅ Checkbox list of Zen **profiles** to patch
+   - ✅ Toggles for pan / pinch / Space auto-PiP / hide traffic lights
+   - On any step failure → **Common error** help + Retry / Skip / Abort
+4. 🧹 In Zen: **Help → More Troubleshooting Information → Clear startup cache…**
+5. ▶️ Video → PiP → two-finger drag / pinch
 
-```bash
-open ~/Applications/Zen.app
-```
-
-5. 🧹 In Zen: **Help → More Troubleshooting Information → Clear startup cache…**  
-   Confirm. Zen restarts.
-6. ▶️ Open YouTube (or any site with a video) → enter **Picture-in-Picture** → try two-finger drag and pinch on the PiP window.
-
-That’s it. 🎊
-
-The installer also clones this repo to:
-
-```text
-~/Developer/programs/zen-pip-gestures
-```
-
----
-
-### 🧰 Option B — clone yourself, then install
+### 🧰 Contributors (from a clone)
 
 ```bash
 mkdir -p ~/Developer/programs
 git clone https://github.com/Johann-Goncalves-Pereira/zen-pip-gestures.git ~/Developer/programs/zen-pip-gestures
 cd ~/Developer/programs/zen-pip-gestures
-./install.sh
+go run ./cmd/install
+# or: ./scripts/validate && go build -o zen-pip-install ./cmd/install
 ```
 
-Then same steps 4–6 as Option A. 👆
+First release / no binary yet? Use `go run ./cmd/install` until a `v*` tag has been published.
 
 ---
 
 ## 🪄 What the installer does (so you’re not scared)
 
-1. 👋 Quits Zen.
-2. 📦 Copies Zen from `/Applications/Zen.app` → **`~/Applications/Zen.app`**  
-   (macOS SIP often blocks writing inside `/Applications`; the home copy is writable.)
-3. 🔌 Installs **fx-autoconfig** into that copy’s `Contents/Resources`.
-4. 🔏 Ad-hoc codesigns `~/Applications/Zen.app` so macOS will still launch it.
-5. 📁 Finds your Zen **profile** and installs the scripts into `chrome/JS` (+ CSS).
-6. ⚙️ Turns on a few PiP-related prefs in `user.js`.
+1. 👋 Quits Zen (asks first).
+2. 📦 Copies Zen → **`~/Applications/Zen.app`** (SIP-safe).
+3. 🔌 Installs **fx-autoconfig** into that copy.
+4. 🔏 Ad-hoc codesigns the app.
+5. 📁 Installs scripts into the **profiles you selected**.
+6. ⚙️ Writes feature prefs to each profile’s `user.js`.
+7. 🛰️ Installs the auto-repatch LaunchAgent.
 
-**👉 After install, always open `~/Applications/Zen.app`**, not the stock one in `/Applications` (unless you symlink — see below).
+**👉 After install, open `~/Applications/Zen.app`** (unless you symlink `/Applications` — see below).
 
 ---
 
@@ -141,15 +129,23 @@ After flipping a toggle, reopen the PiP window (or restart Zen) so it takes effe
 
 ## 🔄 Update
 
+Paste the same `curl … | bash` one-liner again (fetches the newest Release binary), or:
+
 ```bash
 cd ~/Developer/programs/zen-pip-gestures
 git pull
-./install.sh
+go run ./cmd/install
 ```
 
-Or paste the same `curl … | bash` one-liner again. ⚡
-
 Then: open `~/Applications/Zen.app` → **Clear startup cache** once. 🧹
+
+### Publish a new installer binary (maintainers)
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+# GitHub Actions builds darwin arm64/amd64 and attaches them to the release
+```
 
 ---
 
@@ -299,20 +295,19 @@ Gestures (pan/pinch) do not depend on auto-PiP. 👍
 
 ```text
 zen-pip-gestures/
-  install.sh                          ← 🚀 run this
-  README.md                           ← 📖 you are here
+  install.sh                          ← 🚀 curl bootstrap (downloads Release binary)
+  cmd/install/                        ← 🖥️ Charm TUI (Huh + Lip Gloss)
+  internal/install/                   ← 🧩 patch / profiles / prefs logic
+  internal/assets/                    ← 📦 embedded chrome + scripts (go:embed)
   scripts/
+    validate                          ← ✅ gofmt + vet + test
     repatch-on-update.sh              ← 🛰️ auto-fix after Zen updates
     install-launch-agent.sh           ← enable auto-repatch
-    uninstall-launch-agent.sh         ← disable auto-repatch
-  chrome/
-    JS/
-      zen-pip-gestures.uc.js          ← 👆 pan / pinch
-      zen-pip-auto-focus.uc.js        ← 🚪 Space / app leave helpers
-      zen-pip-no-traffic-lights.uc.js ← 🙈 hide titlebar buttons
-    CSS/
-      zen-pip-no-traffic-lights.css   ← 🎨 styles
+  chrome/                             ← source of truth for PiP scripts
+  docs/                               ← wiki
 ```
+
+Wiki: [`docs/README.md`](docs/README.md)
 
 ---
 
