@@ -26,6 +26,13 @@
   }
 
   const INLINE_CSS = `
+/* Zen sizes the titlebar/traffic-light strip from this token — always 0. */
+:root,
+:root #zen-appcontent-navbar-wrapper,
+:root[zen-single-toolbar="true"] #zen-appcontent-navbar-wrapper {
+  --zen-toolbar-height: 8px !important;
+}
+
 /* Kill any XUL titlebar chrome / strip */
 :root #titlebar,
 :root toolbox#navigator-toolbox,
