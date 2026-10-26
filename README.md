@@ -1,0 +1,285 @@
+# Zen PiP gestures (Arc-like)
+
+Trackpad gestures for Zen Browser’s Picture-in-Picture — like Arc:
+
+| Gesture | What it does |
+|---|---|
+| **Two-finger swipe** on the PiP | Moves the window |
+| **Pinch** on the PiP | Resizes around the center |
+| Leave Zen / switch Space | Can auto-PiP the playing video |
+| Traffic lights | Hidden on the PiP window |
+
+Works via [fx-autoconfig](https://github.com/MrOtherGuy/fx-autoconfig) (userChromeJS). **No Zen rebuild.**
+
+Inspired by [zen-browser/desktop#15905](https://github.com/zen-browser/desktop/pull/15905) / [discussion #9002](https://github.com/zen-browser/desktop/discussions/9002).
+
+---
+
+## Requirements
+
+- **macOS** (Apple Silicon or Intel)
+- **Zen Browser** already installed (from [zen-browser.app](https://zen-browser.app))
+- Terminal access (you will paste one command)
+- Internet (installer downloads fx-autoconfig)
+
+---
+
+## Install (one command)
+
+### Option A — fastest (no git knowledge needed)
+
+1. Quit Zen completely (`Cmd+Q`).
+2. Open **Terminal** (Spotlight → type `Terminal`).
+3. Paste this **entire** line and press Enter:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Johann-Goncalves-Pereira/zen-pip-gestures/main/install.sh | bash
+```
+
+4. When it finishes, run exactly what it prints (usually):
+
+```bash
+open ~/Applications/Zen.app
+```
+
+5. In Zen: **Help → More Troubleshooting Information → Clear startup cache…**  
+   Confirm. Zen restarts.
+6. Open YouTube (or any site with a video) → enter **Picture-in-Picture** → try two-finger drag and pinch on the PiP window.
+
+That’s it.
+
+The installer also clones this repo to:
+
+```text
+~/Developer/zen-pip-gestures
+```
+
+---
+
+### Option B — clone yourself, then install
+
+```bash
+mkdir -p ~/Developer
+git clone https://github.com/Johann-Goncalves-Pereira/zen-pip-gestures.git ~/Developer/zen-pip-gestures
+cd ~/Developer/zen-pip-gestures
+./install.sh
+```
+
+Then same steps 4–6 as Option A.
+
+---
+
+## What the installer does (so you’re not scared)
+
+1. Quits Zen.
+2. Copies Zen from `/Applications/Zen.app` → **`~/Applications/Zen.app`**  
+   (macOS SIP often blocks writing inside `/Applications`; the home copy is writable.)
+3. Installs **fx-autoconfig** into that copy’s `Contents/Resources`.
+4. Ad-hoc codesigns `~/Applications/Zen.app` so macOS will still launch it.
+5. Finds your Zen **profile** and installs the scripts into `chrome/JS` (+ CSS).
+6. Turns on a few PiP-related prefs in `user.js`.
+
+**After install, always open `~/Applications/Zen.app`**, not the stock one in `/Applications` (unless you symlink — see below).
+
+---
+
+## ⚠️ Warnings
+
+| Warning | Why it matters |
+|---|---|
+| **Re-run `./install.sh` after every Zen update** | Updates replace the app and wipe `config.js`. |
+| **Launch the patched app** | `/Applications/Zen.app` will **not** have gestures if you only patched `~/Applications`. |
+| **Clear startup cache once** | Without this, old chrome cache may ignore new scripts. |
+| **This is unofficial** | Not affiliated with Zen. UserChromeJS can break after Zen updates. |
+| **Security** | You are loading privileged JS into the browser chrome. Only install from this repo (or a fork you trust). |
+| **Backup** | Your profile data stays put, but quitting Zen mid-work loses unsaved page state. |
+
+### Optional: make `/Applications/Zen` point at the patched copy
+
+```bash
+sudo rm -rf /Applications/Zen.app
+sudo ln -s "$HOME/Applications/Zen.app" /Applications/Zen.app
+```
+
+Then Dock / Spotlight / “Zen” all open the patched build.
+
+---
+
+## Test that it works
+
+1. YouTube → PiP button.
+2. Two-finger swipe on the trackpad **over the PiP** → window moves.
+3. Pinch → grows/shrinks, stays on screen, keeps aspect ratio.
+4. Play / scrub / volume / close still work.
+5. Cursor should stay **inside** the PiP (and stay hidden) while you gesture.
+
+---
+
+## Prefs (optional)
+
+In Zen address bar: `about:config`
+
+| Pref | Default | Meaning |
+|---|---|---|
+| `zen.pip.trackpadGestures.enabled` | `true` | Master on/off for pan/pinch |
+| `zen.pip.gestures.minWidth` | `200` | Smallest PiP width (px) |
+| `zen.pip.gestures.maxWidth` | `900` | Largest PiP width (px) |
+| `media.videocontrols.picture-in-picture.enable-when-switching-tabs.enabled` | `true` | Built-in auto-PiP on tab switch |
+
+---
+
+## Update
+
+```bash
+cd ~/Developer/zen-pip-gestures
+git pull
+./install.sh
+```
+
+Or paste the same `curl … | bash` one-liner again.
+
+Then: open `~/Applications/Zen.app` → **Clear startup cache** once.
+
+---
+
+## Uninstall
+
+```bash
+# 1. Remove scripts from your profile
+PROFILE="$HOME/Library/Application Support/zen/Profiles/YOUR_PROFILE"
+rm -f "$PROFILE/chrome/JS/zen-pip-"*.uc.js
+rm -f "$PROFILE/chrome/CSS/zen-pip-"*.css
+
+# 2. Optional — remove fx-autoconfig loader from the patched app
+rm -f "$HOME/Applications/Zen.app/Contents/Resources/config.js"
+rm -f "$HOME/Applications/Zen.app/Contents/Resources/defaults/pref/config-prefs.js"
+
+# 3. Optional — delete the patched copy and use stock Zen again
+# rm -rf "$HOME/Applications/Zen.app"
+```
+
+Replace `YOUR_PROFILE` with the folder from `about:support` → Profile Folder.
+
+---
+
+## Troubleshooting
+
+### Gestures do nothing
+
+1. Confirm you launched **`~/Applications/Zen.app`**:
+   ```bash
+   ls ~/Applications/Zen.app/Contents/Resources/config.js
+   ```
+   If that file is missing, run `./install.sh` again.
+2. **Help → More Troubleshooting Information → Clear startup cache…**
+3. Check scripts exist:
+   ```bash
+   ls "$HOME/Library/Application Support/zen/Profiles/"*/chrome/JS/zen-pip-*.uc.js
+   ```
+4. Check loader exists in the **active** profile:
+   ```bash
+   ls "$HOME/Library/Application Support/zen/Profiles/"*/chrome/utils/boot.sys.mjs
+   ```
+5. `about:config` → `zen.pip.trackpadGestures.enabled` must be `true`.
+
+### Zen won’t open / “damaged” / Gatekeeper
+
+```bash
+xattr -cr ~/Applications/Zen.app
+codesign --force --deep --sign - ~/Applications/Zen.app
+open ~/Applications/Zen.app
+```
+
+If macOS still blocks: **System Settings → Privacy & Security** → allow Zen, or right-click the app → **Open**.
+
+### Installer says it can’t find the profile
+
+1. Open Zen once (stock is fine) so a profile is created.
+2. Go to `about:support` → **Profile Folder** → Open Folder.
+3. Copy that path and run:
+   ```bash
+   ZEN_PIP_PROFILE="/paste/the/full/path/here" ~/Developer/zen-pip-gestures/install.sh
+   ```
+
+### “Operation not permitted” / can’t write `/Applications`
+
+Expected. This project **never** requires writing into SIP-protected `/Applications`. Use the `~/Applications` copy the installer creates.
+
+### Works, then breaks after a Zen update
+
+Zen updates replace the app bundle. Run:
+
+```bash
+cd ~/Developer/zen-pip-gestures && git pull && ./install.sh
+```
+
+Then clear startup cache again.
+
+### Cursor visible / escapes the PiP while dragging
+
+Re-install the latest scripts (`git pull && ./install.sh`) and clear startup cache. Older builds pinned the cursor only once; current builds re-center and hide via macOS `NSCursor`.
+
+### Traffic lights (red/yellow/green) still show on PiP
+
+Clear startup cache. Confirm:
+
+```bash
+ls "$HOME/Library/Application Support/zen/Profiles/"*/chrome/JS/zen-pip-no-traffic-lights.uc.js
+ls "$HOME/Library/Application Support/zen/Profiles/"*/chrome/CSS/zen-pip-no-traffic-lights.css
+```
+
+### Auto-PiP on Space / app switch doesn’t fire
+
+That’s best-effort. Built-in tab-switch PiP is controlled by:
+
+`media.videocontrols.picture-in-picture.enable-when-switching-tabs.enabled`
+
+Gestures (pan/pinch) do not depend on auto-PiP.
+
+### How to see chrome errors (advanced)
+
+1. `about:config` → `devtools.chrome.enabled` = `true`  
+   and `devtools.debugger.remote-enabled` = `true`
+2. DevTools settings (F1) → enable **browser chrome and add-on debugging toolboxes**
+3. **Tools → Browser Tools → Browser Toolbox** (`Cmd+Opt+Shift+I`)
+4. Look for errors mentioning `zen-pip` or `autoconfig`
+
+---
+
+## Common errors
+
+| Error / symptom | Cause | Fix |
+|---|---|---|
+| `Zen.app not found in /Applications or ~/Applications` | Zen not installed | Install Zen, then re-run installer |
+| `Could not find your Zen profile` | Never opened Zen / wrong profile | Open Zen once; pass `ZEN_PIP_PROFILE=…` |
+| `Could not download fx-autoconfig` | No network / GitHub blocked | Check internet; retry |
+| `Failed to unpack fx-autoconfig` | Bad zip / disk full | Retry; free disk space |
+| `codesign` fails | Rare toolchain issue | Install Xcode Command Line Tools: `xcode-select --install` |
+| Gestures missing but no error | Opened stock `/Applications` Zen | `open ~/Applications/Zen.app` |
+| Gestures missing after update | App bundle replaced | `./install.sh` + clear startup cache |
+| `curl: (22) … 404` on install URL | Typo / repo renamed | Use the clone Option B from this README |
+| PiP moves but cursor leaves the window | Outdated script | `git pull && ./install.sh` |
+| macOS says app is damaged | Quarantine / signature | `xattr -cr` + `codesign` commands above |
+
+---
+
+## Project layout
+
+```text
+zen-pip-gestures/
+  install.sh                          ← run this
+  README.md
+  chrome/
+    JS/
+      zen-pip-gestures.uc.js          ← pan / pinch
+      zen-pip-auto-focus.uc.js        ← Space / app leave helpers
+      zen-pip-no-traffic-lights.uc.js ← hide titlebar buttons
+    CSS/
+      zen-pip-no-traffic-lights.css
+```
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
