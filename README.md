@@ -112,6 +112,7 @@ In Zen address bar open `about:config`, search `zen.pip`, flip any toggle:
 | 👆👆 Two-finger swipe (move PiP) | `zen.pip.gestures.pan.enabled` | `true` ✅ |
 | 🤏 Pinch (resize PiP) | `zen.pip.gestures.pinch.enabled` | `true` ✅ |
 | 🚪 Auto-PiP on tab switch, other desktop / Stage Manager (skips Raycast & menu bar) | `zen.pip.autoSpace.enabled` | `true` ✅ |
+| 1️⃣ Only one PiP at a time (Arc-like) | `zen.pip.onlyOne.enabled` | `true` ✅ |
 | 🔴🟡🟢 Hide traffic lights + slim top strip (8px) | `zen.pip.hideTrafficLights.enabled` | `true` ✅ |
 
 Extra / size:
