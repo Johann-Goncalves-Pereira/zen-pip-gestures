@@ -53,7 +53,7 @@ go run ./cmd/install
 # or: ./scripts/validate && go build -o zen-pip-install ./cmd/install
 ```
 
-First release / no binary yet? Use `go run ./cmd/install` until a `v*` tag has been published.
+Latest binary release: [v0.1.0](https://github.com/Johann-Goncalves-Pereira/zen-pip-gestures/releases/tag/v0.1.0).
 
 ---
 
