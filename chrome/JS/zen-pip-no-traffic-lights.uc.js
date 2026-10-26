@@ -9,9 +9,21 @@
  * titlebar-buttonbox rect. display:none can make Cocoa fall back to a default
  * left-side placement (looks like a sidebar-side strip). Use a 0×0 laid-out
  * buttonbox instead so placeWindowButtons gets an empty rect and hides them.
+ *
+ * Pref: zen.pip.hideTrafficLights.enabled (default true)
  */
 (function () {
   "use strict";
+
+  const PREF_HIDE = "zen.pip.hideTrafficLights.enabled";
+
+  function hideEnabled() {
+    try {
+      return Services.prefs.getBoolPref(PREF_HIDE, true);
+    } catch (_) {
+      return true;
+    }
+  }
 
   const INLINE_CSS = `
 /* Kill any XUL titlebar chrome / strip */
@@ -160,6 +172,9 @@ body,
   }
 
   function apply() {
+    if (!hideEnabled()) {
+      return;
+    }
     ensureRootAttrs();
     injectCss();
     ensureHiddenButtonbox();

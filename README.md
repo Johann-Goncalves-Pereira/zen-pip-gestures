@@ -115,16 +115,27 @@ Then Dock / Spotlight / “Zen” all open the patched build. ✨
 
 ---
 
-## 🎛️ Prefs (optional)
+## 🎛️ Prefs (toggles)
 
-In Zen address bar: `about:config`
+In Zen address bar open `about:config`, search `zen.pip`, flip any toggle:
+
+| Feature | Pref | Default |
+|---|---|---|
+| 👆👆 Two-finger swipe (move PiP) | `zen.pip.gestures.pan.enabled` | `true` ✅ |
+| 🤏 Pinch (resize PiP) | `zen.pip.gestures.pinch.enabled` | `true` ✅ |
+| 🚪 Leave Zen / switch Space (auto-PiP) | `zen.pip.autoSpace.enabled` | `true` ✅ |
+| 🔴🟡🟢 Hide traffic lights on PiP | `zen.pip.hideTrafficLights.enabled` | `true` ✅ |
+
+Extra / size:
 
 | Pref | Default | Meaning |
 |---|---|---|
-| `zen.pip.trackpadGestures.enabled` | `true` ✅ | Master on/off for pan/pinch |
+| `zen.pip.trackpadGestures.enabled` | `true` ✅ | Master — `false` disables **both** pan and pinch |
 | `zen.pip.gestures.minWidth` | `200` 📏 | Smallest PiP width (px) |
 | `zen.pip.gestures.maxWidth` | `900` 📐 | Largest PiP width (px) |
-| `media.videocontrols.picture-in-picture.enable-when-switching-tabs.enabled` | `true` ✅ | Built-in auto-PiP on tab switch |
+| `media.videocontrols.picture-in-picture.enable-when-switching-tabs.enabled` | `true` ✅ | Built-in auto-PiP on tab switch (also required for Space auto-PiP) |
+
+After flipping a toggle, reopen the PiP window (or restart Zen) so it takes effect.
 
 ---
 
@@ -180,7 +191,7 @@ Replace `YOUR_PROFILE` with the folder from `about:support` → Profile Folder. 
    ```bash
    ls "$HOME/Library/Application Support/zen/Profiles/"*/chrome/utils/boot.sys.mjs
    ```
-5. 🎛️ `about:config` → `zen.pip.trackpadGestures.enabled` must be `true`.
+5. 🎛️ `about:config` → check `zen.pip.gestures.pan.enabled` / `zen.pip.gestures.pinch.enabled` (and master `zen.pip.trackpadGestures.enabled`) are `true`.
 
 ### 🚫 Zen won’t open / “damaged” / Gatekeeper
 

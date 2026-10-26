@@ -231,6 +231,10 @@ ensure_pref() {
 ensure_pref "media.videocontrols.picture-in-picture.enabled" "true"
 ensure_pref "media.videocontrols.picture-in-picture.enable-when-switching-tabs.enabled" "true"
 ensure_pref "zen.pip.trackpadGestures.enabled" "true"
+ensure_pref "zen.pip.gestures.pan.enabled" "true"
+ensure_pref "zen.pip.gestures.pinch.enabled" "true"
+ensure_pref "zen.pip.autoSpace.enabled" "true"
+ensure_pref "zen.pip.hideTrafficLights.enabled" "true"
 ok "prefs written to user.js"
 
 # Optional: replace /Applications with symlink so Dock/Spotlight hit the good copy

@@ -5,15 +5,19 @@
 // ==/UserScript==
 
 /**
- * Prefs:
- *   zen.pip.trackpadGestures.enabled (default true)
+ * Prefs (about:config):
+ *   zen.pip.gestures.pan.enabled   (default true) — two-finger swipe moves PiP
+ *   zen.pip.gestures.pinch.enabled (default true) — pinch resizes PiP
+ *   zen.pip.trackpadGestures.enabled (default true) — master; false disables both
  *   zen.pip.gestures.minWidth (default 200)
  *   zen.pip.gestures.maxWidth (default 900)
  */
 (function () {
   "use strict";
 
-  const PREF = "zen.pip.trackpadGestures.enabled";
+  const PREF_MASTER = "zen.pip.trackpadGestures.enabled";
+  const PREF_PAN = "zen.pip.gestures.pan.enabled";
+  const PREF_PINCH = "zen.pip.gestures.pinch.enabled";
   const PREF_MIN = "zen.pip.gestures.minWidth";
   const PREF_MAX = "zen.pip.gestures.maxWidth";
   const DEFAULT_MIN_WIDTH = 200;
@@ -38,12 +42,24 @@
     }
   }
 
-  function enabled() {
+  function prefBool(name, fallback) {
     try {
-      return Services.prefs.getBoolPref(PREF, true);
+      return Services.prefs.getBoolPref(name, fallback);
     } catch (_) {
-      return true;
+      return fallback;
     }
+  }
+
+  function masterEnabled() {
+    return prefBool(PREF_MASTER, true);
+  }
+
+  function panEnabled() {
+    return masterEnabled() && prefBool(PREF_PAN, true);
+  }
+
+  function pinchEnabled() {
+    return masterEnabled() && prefBool(PREF_PINCH, true);
   }
 
   function isFullscreen() {
@@ -473,12 +489,13 @@
   }
 
   function onWheel(event) {
-    if (!enabled() || isFullscreen()) {
+    if (isFullscreen()) {
       return;
     }
 
+    // ctrl+wheel (or trackpad pinch-as-wheel) → resize
     if (event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
-      if (isInteractiveControl(event.target)) {
+      if (!pinchEnabled() || isInteractiveControl(event.target)) {
         return;
       }
       event.preventDefault();
@@ -491,6 +508,9 @@
       return;
     }
 
+    if (!panEnabled()) {
+      return;
+    }
     if (event.deltaMode !== 0) {
       return;
     }
@@ -512,7 +532,11 @@
   }
 
   function onMagnifyStart(event) {
-    if (!enabled() || isFullscreen() || isInteractiveControl(event.target)) {
+    if (
+      !pinchEnabled() ||
+      isFullscreen() ||
+      isInteractiveControl(event.target)
+    ) {
       return;
     }
     beginGesture();
@@ -521,7 +545,11 @@
   }
 
   function onMagnifyUpdate(event) {
-    if (!enabled() || isFullscreen() || isInteractiveControl(event.target)) {
+    if (
+      !pinchEnabled() ||
+      isFullscreen() ||
+      isInteractiveControl(event.target)
+    ) {
       return;
     }
     beginGesture();
@@ -531,7 +559,7 @@
   }
 
   function onMagnifyEnd(event) {
-    if (!enabled() || isFullscreen()) {
+    if (!pinchEnabled() || isFullscreen()) {
       return;
     }
     noteMagnifyGesture();

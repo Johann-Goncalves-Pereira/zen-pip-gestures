@@ -39,6 +39,8 @@
   const PIP_ENABLED = "media.videocontrols.picture-in-picture.enabled";
   const PIP_SWITCH_TABS =
     "media.videocontrols.picture-in-picture.enable-when-switching-tabs.enabled";
+  /** Toggle: auto-PiP when leaving Zen / switching Space. */
+  const PREF_AUTO_SPACE = "zen.pip.autoSpace.enabled";
 
   /** @type {WeakSet<object>} */
   const openedByUs = new WeakSet();
@@ -60,6 +62,7 @@
   function prefsAllow() {
     try {
       return (
+        Services.prefs.getBoolPref(PREF_AUTO_SPACE, true) &&
         Services.prefs.getBoolPref(PIP_ENABLED, false) &&
         Services.prefs.getBoolPref(PIP_SWITCH_TABS, false)
       );
