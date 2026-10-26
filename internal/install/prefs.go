@@ -13,6 +13,7 @@ type FeatureToggles struct {
 	Pinch             bool
 	AutoSpace         bool
 	HideTrafficLights bool
+	OnlyOne           bool
 	MasterGestures    bool
 }
 
@@ -23,6 +24,7 @@ func DefaultFeatureToggles() FeatureToggles {
 		Pinch:             true,
 		AutoSpace:         true,
 		HideTrafficLights: true,
+		OnlyOne:           true,
 		MasterGestures:    true,
 	}
 }
@@ -38,6 +40,7 @@ func WriteUserPrefs(profilePath string, t FeatureToggles) error {
 		"zen.pip.gestures.pinch.enabled":                                            boolJS(t.Pinch),
 		"zen.pip.autoSpace.enabled":                                                 boolJS(t.AutoSpace),
 		"zen.pip.hideTrafficLights.enabled":                                         boolJS(t.HideTrafficLights),
+		"zen.pip.onlyOne.enabled":                                                   boolJS(t.OnlyOne),
 	}
 
 	existing := map[string]string{}

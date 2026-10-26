@@ -157,15 +157,17 @@ func pickProfiles(profiles []install.Profile) ([]install.Profile, error) {
 func pickFeatures() (install.FeatureToggles, error) {
 	t := install.DefaultFeatureToggles()
 	var (
-		pan, pinch, space, lights bool
+		pan, pinch, space, lights, onlyOne bool
 	)
-	pan, pinch, space, lights = t.Pan, t.Pinch, t.AutoSpace, t.HideTrafficLights
+	pan, pinch, space, lights, onlyOne =
+		t.Pan, t.Pinch, t.AutoSpace, t.HideTrafficLights, t.OnlyOne
 	err := huh.NewForm(
 		huh.NewGroup(
 			huh.NewConfirm().Title("👆 Two-finger swipe (pan)").Value(&pan),
 			huh.NewConfirm().Title("🤏 Pinch resize").Value(&pinch),
 			huh.NewConfirm().Title("🚪 Auto-PiP on leave Zen / Space").Value(&space),
 			huh.NewConfirm().Title("🙈 Hide traffic lights").Value(&lights),
+			huh.NewConfirm().Title("1️⃣  Only one PiP at a time (Arc-like)").Value(&onlyOne),
 		),
 	).Run()
 	if err != nil {
@@ -176,6 +178,7 @@ func pickFeatures() (install.FeatureToggles, error) {
 		Pinch:             pinch,
 		AutoSpace:         space,
 		HideTrafficLights: lights,
+		OnlyOne:           onlyOne,
 		MasterGestures:    pan || pinch,
 	}, nil
 }
