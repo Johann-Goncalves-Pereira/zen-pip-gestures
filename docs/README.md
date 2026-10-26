@@ -28,7 +28,7 @@ flowchart TB
 | Area | Pages |
 | ---- | ----- |
 | **Architecture** | [Overview](architecture/overview.md) |
-| **Product** | [Unshipped](product/unshipped.md) |
+| **Product** | [Auto-PiP](product/auto-pip.md) · [Unshipped](product/unshipped.md) |
 
 ---
 

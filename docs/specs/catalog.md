@@ -29,6 +29,8 @@ behavior exists.
 | UC-install-01 | Missing Zen → official install hints; retry re-checks filesystem | product | install | `TestZenMissingHints` | asserted-unit |
 | BR-toolbar-01 | Main chrome forces `--zen-toolbar-height` / `--zen-toolbar-height-with-bookmarks` to 8px and hides titlebar buttons | product | chrome | manual (Browser Toolbox) | fail-closed |
 | BR-toolbar-02 | Hover must not apply negative `margin-top` on `.browserContainer` (`has-toolbar-hovered`) | product | chrome | manual + `zen.view.shift-down-site-on-hover=true` | fail-closed |
-| UC-autopip-01 | Auto-PiP on tab switch sends AutoToggle for the tab that was left | product | auto-focus | manual | fail-closed |
-| UC-autopip-02 | Auto-PiP on deactivate when another app is frontmost; skip Raycast/Spotlight/status-bar bundle IDs | product | auto-focus | manual | fail-closed |
+| UC-autopip-01 | Auto-PiP on tab switch sends AutoToggle for the tab that was left | product/auto-pip | auto-focus | manual | fail-closed |
+| UC-autopip-02 | Auto-PiP on deactivate when another app is frontmost; skip Raycast/Spotlight/status-bar bundle IDs | product/auto-pip | auto-focus | manual | fail-closed |
+| BR-autopip-03 | Closing PiP must clear Firefox `browserWeakMap` / `weakAutoPipBrowserToParent` (no raw-only `win.close`) | product/auto-pip | auto-focus | manual (log must not stick on `skip-already-pip`) | fail-closed |
+| BR-autopip-04 | AutoToggle must run while media can still report playing (do not force `docShellIsActive=false` first) | product/auto-pip | auto-focus | manual | fail-closed |
 | BR-pip-01 | With `zen.pip.onlyOne.enabled` (default true), opening a PiP closes every other PiP window | product | only-one | manual | fail-closed |
