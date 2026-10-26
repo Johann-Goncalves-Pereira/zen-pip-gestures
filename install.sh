@@ -4,14 +4,14 @@
 # Usage (from a clone):
 #   ./install.sh
 #
-# Usage (no clone yet — copies itself into ~/Developer/zen-pip-gestures):
+# Usage (no clone yet — copies itself into ~/Developer/programs/zen-pip-gestures):
 #   curl -fsSL https://raw.githubusercontent.com/Johann-Goncalves-Pereira/zen-pip-gestures/main/install.sh | bash
 #
 set -euo pipefail
 
 REPO_NAME="zen-pip-gestures"
 REPO_URL="https://github.com/Johann-Goncalves-Pereira/zen-pip-gestures.git"
-DEFAULT_CLONE_DIR="${HOME}/Developer/${REPO_NAME}"
+DEFAULT_CLONE_DIR="${HOME}/Developer/programs/${REPO_NAME}"
 
 # Prefer ~/Applications (writable, SIP-safe). Fall back only if Zen lives there.
 SRC_APP="/Applications/Zen.app"
@@ -25,9 +25,9 @@ BLD=$'\033[1m'
 RST=$'\033[0m'
 
 say()  { printf '%s\n' "$*"; }
-ok()   { printf '%s✓%s %s\n' "$GRN" "$RST" "$*"; }
-warn() { printf '%s!%s %s\n' "$YLW" "$RST" "$*"; }
-die()  { printf '%s✗%s %s\n' "$RED" "$RST" "$*" >&2; exit 1; }
+ok()   { printf '%s✅ %s%s\n' "$GRN" "$*" "$RST"; }
+warn() { printf '%s⚠️  %s%s\n' "$YLW" "$*" "$RST"; }
+die()  { printf '%s❌ %s%s\n' "$RED" "$*" "$RST" >&2; exit 1; }
 
 # ---------------------------------------------------------------------------
 # Resolve where this script lives. If piped from curl, clone the repo first.
@@ -43,7 +43,7 @@ resolve_repo_root() {
   fi
 
   # Running via curl | bash — clone (or update) a local copy.
-  say "${BLD}==>${RST} Scripts not found next to installer — cloning repo…"
+  say "${BLD}📥${RST} Scripts not found next to installer — cloning repo…"
   mkdir -p "$(dirname "$DEFAULT_CLONE_DIR")"
   if [[ -d "$DEFAULT_CLONE_DIR/.git" ]]; then
     git -C "$DEFAULT_CLONE_DIR" pull --ff-only || warn "git pull failed; using existing clone"
@@ -61,18 +61,18 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 say ""
-say "${BLD}Zen PiP gestures installer${RST}"
-say "Repo: $REPO_ROOT"
+say "${BLD}🖼️  Zen PiP gestures installer ✨${RST}"
+say "📂 Repo: $REPO_ROOT"
 say ""
 
 # Warnings up front
-say "${YLW}${BLD}Before we continue:${RST}"
-say "  • macOS only"
-say "  • Zen Browser must already be installed (usually in /Applications)"
-say "  • This will QUIT Zen"
-say "  • Zen will be copied to ~/Applications/Zen.app (SIP-safe)"
-say "  • After install, launch THAT copy — not /Applications/Zen.app"
-say "  • After every Zen update, run this installer again"
+say "${YLW}${BLD}⚠️  Before we continue:${RST}"
+say "  🍎  macOS only"
+say "  🌐  Zen Browser must already be installed (usually in /Applications)"
+say "  🛑  This will QUIT Zen"
+say "  📦  Zen will be copied to ~/Applications/Zen.app (SIP-safe)"
+say "  🎯  After install, launch THAT copy — not /Applications/Zen.app"
+say "  🔁  After every Zen update, run this installer again"
 say ""
 
 if [[ ! -d "$SRC_APP" && ! -d "$DST_APP" ]]; then
@@ -91,7 +91,7 @@ if [[ ! -f "$REPO_ROOT/chrome/JS/zen-pip-gestures.uc.js" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-say "${BLD}==>${RST} Quitting Zen…"
+say "${BLD}👋${RST} Quitting Zen…"
 osascript -e 'tell application "Zen" to quit' 2>/dev/null || true
 for name in Zen zen zen-bin; do
   killall "$name" 2>/dev/null || true
@@ -104,7 +104,7 @@ fi
 ok "Zen quit"
 
 # ---------------------------------------------------------------------------
-say "${BLD}==>${RST} Copying Zen → ~/Applications (writable copy)…"
+say "${BLD}📦${RST} Copying Zen → ~/Applications (writable copy)…"
 mkdir -p "$HOME/Applications"
 if [[ "$SRC_APP" != "$DST_APP" ]]; then
   # Fresh copy from stock app so updates are picked up
@@ -116,7 +116,7 @@ fi
 ok "App at $DST_APP"
 
 # ---------------------------------------------------------------------------
-say "${BLD}==>${RST} Downloading fx-autoconfig…"
+say "${BLD}⬇️${RST} Downloading fx-autoconfig…"
 curl -fsSL -o "$TMP/fx-autoconfig.zip" \
   "https://github.com/MrOtherGuy/fx-autoconfig/archive/refs/heads/master.zip" \
   || die "Could not download fx-autoconfig (check network)"
@@ -126,14 +126,14 @@ FX="$(find "$TMP" -maxdepth 1 -type d -name 'fx-autoconfig-*' | head -1)"
 ok "fx-autoconfig ready"
 
 # ---------------------------------------------------------------------------
-say "${BLD}==>${RST} Installing autoconfig into app Resources…"
+say "${BLD}🔌${RST} Installing autoconfig into app Resources…"
 cp "$FX/program/config.js" "$ZEN_RES/config.js"
 mkdir -p "$ZEN_RES/defaults/pref"
 cp "$FX/program/defaults/pref/config-prefs.js" \
   "$ZEN_RES/defaults/pref/config-prefs.js"
 ok "config.js + config-prefs.js"
 
-say "${BLD}==>${RST} Clearing quarantine + ad-hoc codesign…"
+say "${BLD}🔏${RST} Clearing quarantine + ad-hoc codesign…"
 xattr -cr "$DST_APP" || true
 codesign --force --deep --sign - "$DST_APP" >/dev/null
 ok "Signed ~/Applications/Zen.app"
@@ -201,15 +201,15 @@ Click \"Profile Folder\" → Open Folder, then re-run:
   ZEN_PIP_PROFILE=\"/full/path/to/that/folder\" \"$REPO_ROOT/install.sh\""
 fi
 
-say "${BLD}==>${RST} Profile: $PROFILE"
+say "${BLD}📁${RST} Profile: $PROFILE"
 
 # ---------------------------------------------------------------------------
-say "${BLD}==>${RST} Merging fx-autoconfig into profile chrome/…"
+say "${BLD}🧩${RST} Merging fx-autoconfig into profile chrome/…"
 mkdir -p "$PROFILE/chrome"
 rsync -a "$FX/profile/chrome/" "$PROFILE/chrome/"
 ok "boot.sys.mjs + utils"
 
-say "${BLD}==>${RST} Installing Zen PiP scripts…"
+say "${BLD}✨${RST} Installing Zen PiP scripts…"
 mkdir -p "$PROFILE/chrome/JS" "$PROFILE/chrome/CSS"
 cp "$REPO_ROOT/chrome/JS/zen-pip-gestures.uc.js" "$PROFILE/chrome/JS/"
 cp "$REPO_ROOT/chrome/JS/zen-pip-auto-focus.uc.js" "$PROFILE/chrome/JS/"
@@ -244,22 +244,22 @@ fi
 
 # ---------------------------------------------------------------------------
 say ""
-say "${GRN}${BLD}Done.${RST}"
+say "${GRN}${BLD}🎉 Done!${RST}"
 say ""
-say "${BLD}Next steps (do these now):${RST}"
-say "  1. Open the patched app:"
+say "${BLD}👉 Next steps (do these now):${RST}"
+say "  1️⃣  Open the patched app:"
 say "       open \"$DST_APP\""
-say "  2. In Zen: Help → More Troubleshooting Information → ${BLD}Clear startup cache…${RST}"
+say "  2️⃣  In Zen: Help → More Troubleshooting Information → ${BLD}Clear startup cache…${RST}"
 say "     (Zen will restart)"
-say "  3. Play a video → click PiP → two-finger drag to move, pinch to resize"
+say "  3️⃣  Play a video → click PiP → two-finger drag to move, pinch to resize ✨"
 say ""
-say "Pin ${BLD}~/Applications/Zen.app${RST} to your Dock. Prefer that over /Applications."
+say "📌 Pin ${BLD}~/Applications/Zen.app${RST} to your Dock. Prefer that over /Applications."
 say ""
-say "Verify files:"
+say "🔎 Verify files:"
 ls -la "$ZEN_RES/config.js" \
   "$ZEN_RES/defaults/pref/config-prefs.js" \
   "$PROFILE/chrome/utils/boot.sys.mjs" \
   "$PROFILE/chrome/JS/zen-pip-"*.uc.js \
   "$PROFILE/chrome/CSS/zen-pip-"*.css
 say ""
-say "Problems? Read: $REPO_ROOT/README.md  →  Troubleshooting"
+say "🩺 Problems? Read: $REPO_ROOT/README.md  →  Troubleshooting"
