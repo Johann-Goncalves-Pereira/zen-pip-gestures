@@ -29,3 +29,5 @@ behavior exists.
 | UC-install-01 | Missing Zen → official install hints; retry re-checks filesystem | product | install | `TestZenMissingHints` | asserted-unit |
 | BR-toolbar-01 | Main chrome forces `--zen-toolbar-height` / `--zen-toolbar-height-with-bookmarks` to 8px and hides titlebar buttons | product | chrome | manual (Browser Toolbox) | fail-closed |
 | BR-toolbar-02 | Hover must not apply negative `margin-top` on `.browserContainer` (`has-toolbar-hovered`) | product | chrome | manual + `zen.view.shift-down-site-on-hover=true` | fail-closed |
+| UC-autopip-01 | Auto-PiP on tab switch sends AutoToggle for the tab that was left | product | auto-focus | manual | fail-closed |
+| UC-autopip-02 | Auto-PiP on deactivate when another app is frontmost; skip Raycast/Spotlight/status-bar bundle IDs | product | auto-focus | manual | fail-closed |
