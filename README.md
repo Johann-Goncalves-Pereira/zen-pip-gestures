@@ -112,7 +112,7 @@ In Zen address bar open `about:config`, search `zen.pip`, flip any toggle:
 | 👆👆 Two-finger swipe (move PiP) | `zen.pip.gestures.pan.enabled` | `true` ✅ |
 | 🤏 Pinch (resize PiP) | `zen.pip.gestures.pinch.enabled` | `true` ✅ |
 | 🚪 Leave Zen / switch Space (auto-PiP) | `zen.pip.autoSpace.enabled` | `true` ✅ |
-| 🔴🟡🟢 Hide traffic lights on PiP | `zen.pip.hideTrafficLights.enabled` | `true` ✅ |
+| 🔴🟡🟢 Hide traffic lights + slim top strip (8px) | `zen.pip.hideTrafficLights.enabled` | `true` ✅ |
 
 Extra / size:
 
@@ -303,7 +303,8 @@ zen-pip-gestures/
     validate                          ← ✅ gofmt + vet + test
     repatch-on-update.sh              ← 🛰️ auto-fix after Zen updates
     install-launch-agent.sh           ← enable auto-repatch
-  chrome/                             ← source of truth for PiP scripts
+  chrome/                             ← source of truth for PiP + main chrome scripts
+    JS/zen-pip-force-toolbar-height.uc.js  ← 🙈 slim strip, hide lights, no hover jump
   docs/                               ← wiki
 ```
 

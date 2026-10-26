@@ -1,5 +1,12 @@
 /* Injected companion for zen-pip-no-traffic-lights.uc.js (PiP has no userChrome.css). */
 
+/* Zen sizes the titlebar/traffic-light strip from this token — keep it zero. */
+:root,
+:root #zen-appcontent-navbar-wrapper,
+:root[zen-single-toolbar="true"] #zen-appcontent-navbar-wrapper {
+  --zen-toolbar-height: 8px !important;
+}
+
 :root #titlebar,
 :root toolbox#navigator-toolbox,
 :root .titlebar-spacer {
