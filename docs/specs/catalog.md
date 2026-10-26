@@ -27,3 +27,5 @@ behavior exists.
 | BR-install-03 | `ParseProfilesIni` returns every Profile section with resolved absolute path; Default=1 is marked | product | install | `TestParseProfilesIni` | asserted-unit |
 | BR-install-04 | Profiles without `prefs.js` are omitted from selectable list | product | install | `TestListSelectableProfiles` | asserted-unit |
 | UC-install-01 | Missing Zen → official install hints; retry re-checks filesystem | product | install | `TestZenMissingHints` | asserted-unit |
+| BR-toolbar-01 | Main chrome forces `--zen-toolbar-height` / `--zen-toolbar-height-with-bookmarks` to 8px and hides titlebar buttons | product | chrome | manual (Browser Toolbox) | fail-closed |
+| BR-toolbar-02 | Hover must not apply negative `margin-top` on `.browserContainer` (`has-toolbar-hovered`) | product | chrome | manual + `zen.view.shift-down-site-on-hover=true` | fail-closed |
