@@ -45,6 +45,7 @@
   const PIP_SWITCH_TABS =
     "media.videocontrols.picture-in-picture.enable-when-switching-tabs.enabled";
   const PREF_AUTO_SPACE = "zen.pip.autoSpace.enabled";
+  const PREF_ONLY_ONE = "zen.pip.onlyOne.enabled";
   const SETTLE_MS = 200;
 
   /** Frontmost apps that keep Zen visible underneath — do not auto-PiP. */
@@ -90,6 +91,35 @@
       );
     } catch (_) {
       return false;
+    }
+  }
+
+  function onlyOneEnabled() {
+    try {
+      return Services.prefs.getBoolPref(PREF_ONLY_ONE, true);
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /** Close every open PiP so a new AutoToggle can replace it (Arc-like). */
+  function closeAllPips() {
+    try {
+      if (window.ZenPipOnlyOne?.closeAll) {
+        window.ZenPipOnlyOne.closeAll();
+        return;
+      }
+    } catch (_) {
+      /* fall through */
+    }
+    try {
+      for (const win of Services.wm.getEnumerator("Toolkit:PictureInPicture")) {
+        if (win && !win.closed) {
+          win.close();
+        }
+      }
+    } catch (_) {
+      /* ignore */
     }
   }
 
@@ -287,9 +317,18 @@
       mark("skip-no-browser:" + reason);
       return;
     }
-    if (browserAlreadyHasPip(browser) || anyPipOpen()) {
+    if (browserAlreadyHasPip(browser)) {
       mark("skip-already-pip:" + reason);
       return;
+    }
+    // Arc-like: replace any other PiP instead of stacking or skipping.
+    if (anyPipOpen()) {
+      if (!onlyOneEnabled()) {
+        mark("skip-already-pip:" + reason);
+        return;
+      }
+      closeAllPips();
+      mark("replaced-other-pip:" + reason);
     }
 
     const wgp = browser.browsingContext?.currentWindowGlobal;
