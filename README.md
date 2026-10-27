@@ -53,7 +53,8 @@ go run ./cmd/install
 # or: ./scripts/validate && go build -o zen-pip-install ./cmd/install
 ```
 
-Latest binary release: [v0.1.0](https://github.com/Johann-Goncalves-Pereira/zen-pip-gestures/releases/tag/v0.1.0).
+Latest binary release: [v0.1.4](https://github.com/Johann-Goncalves-Pereira/zen-pip-gestures/releases/tag/v0.1.4).
+Patch bumps only: each merged PR adds `0.0.1` (`v0.1.0` → `v0.1.1` → …).
 
 ---
 
@@ -143,8 +144,9 @@ Then: open `~/Applications/Zen.app` → **Clear startup cache** once. 🧹
 ### Publish a new installer binary (maintainers)
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+# Next tag = previous + 0.0.1 (one patch per merged PR)
+git tag v0.1.4
+git push origin v0.1.4
 # GitHub Actions builds darwin arm64/amd64 and attaches them to the release
 ```
 
