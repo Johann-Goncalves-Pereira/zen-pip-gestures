@@ -35,6 +35,10 @@ behavior exists.
 | BR-autopip-03 | Closing PiP must clear Firefox `browserWeakMap` / `weakAutoPipBrowserToParent` (no raw-only `win.close`) | product/auto-pip | auto-focus | manual (log must not stick on `skip-already-pip`) | fail-closed |
 | BR-autopip-04 | AutoToggle must run while media can still report playing (do not force `docShellIsActive=false` first) | product/auto-pip | auto-focus | manual | fail-closed |
 | BR-pip-01 | With `zen.pip.onlyOne.enabled` (default true), opening a PiP closes every other PiP window | product | only-one | manual | fail-closed |
-| BR-pip-02 | PiP overlay hides `#close`, `#minimize`, `#controls-bottom`, and `#controls-bottom-gradient` | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-02 | PiP overlay hides `#close`, `#minimize`, `#controls-bottom-gradient`, scrubber/seek/end clusters — not the whole `#controls-bottom` | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
 | BR-pip-03 | PiP `#unpip` is top-left, transparent, white, with drop-shadow (incl. mac override) | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
 | BR-pip-04 | PiP control CSS ships as `.uc.css` `@include` player.xhtml and UC.js uses `loadSheetUsingURI` (CSP-safe) | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-05 | PiP control CSS tooltips (`::after` / `attr(tooltip)`) are suppressed so labels cannot clip | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-06 | `#controls` is a size container; `#unpip` and `#playpause` size/inset with `cqi` | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-07 | `#playpause` is bottom-left, transparent white icon with drop-shadow (play/pause toggle only) | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| UC-pip-01 | New PiP chrome features are installed on the machine via `go run ./cmd/install` (Update path) | product/pip-controls | install | manual | fail-closed |
