@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           Zen PiP hide traffic lights
-// @description    Hide macOS traffic lights / titlebar strip; minimal PiP controls (only #unpip)
+// @description    Hide macOS traffic lights; PiP #unpip + #playpause (cqi, no tooltips)
 // @include        chrome://global/content/pictureinpicture/player.xhtml
 // ==/UserScript==
 
@@ -47,19 +47,53 @@ html[windowtype="Toolkit:PictureInPicture"] #zen-pip-buttonbox-anchor {
   -moz-appearance: none !important;
 }
 
-html[windowtype="Toolkit:PictureInPicture"] #close,
-html[windowtype="Toolkit:PictureInPicture"] #minimize,
-html[windowtype="Toolkit:PictureInPicture"] #controls-bottom,
-html[windowtype="Toolkit:PictureInPicture"] #controls-bottom-gradient {
+html[windowtype="Toolkit:PictureInPicture"] #controls {
+  container-type: size !important;
+  container-name: zen-pip !important;
+}
+
+html[windowtype="Toolkit:PictureInPicture"] .control-item:hover::after,
+html[windowtype="Toolkit:PictureInPicture"] .control-item:focus-visible::after,
+html[windowtype="Toolkit:PictureInPicture"] .control-item::after {
+  content: none !important;
   display: none !important;
 }
 
+html[windowtype="Toolkit:PictureInPicture"] #close,
+html[windowtype="Toolkit:PictureInPicture"] #minimize,
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom-gradient,
+html[windowtype="Toolkit:PictureInPicture"] .controls-bottom-upper,
+html[windowtype="Toolkit:PictureInPicture"] .start-controls,
+html[windowtype="Toolkit:PictureInPicture"] .end-controls,
+html[windowtype="Toolkit:PictureInPicture"] #seekBackward,
+html[windowtype="Toolkit:PictureInPicture"] #seekForward,
+html[windowtype="Toolkit:PictureInPicture"] #timestamp {
+  display: none !important;
+}
+
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom {
+  pointer-events: none !important;
+  bottom: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom .controls-bottom-lower,
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom .center-controls {
+  display: block !important;
+  margin: 0 !important;
+  grid-template-columns: none !important;
+  grid-template-areas: none !important;
+  justify-self: start !important;
+}
+
 html[windowtype="Toolkit:PictureInPicture"] #unpip,
-html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"] {
-  position: absolute !important;
-  left: 10px !important;
-  right: auto !important;
-  top: 10px !important;
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"],
+html[windowtype="Toolkit:PictureInPicture"] #playpause {
+  width: 8cqi !important;
+  height: 8cqi !important;
+  max-width: none !important;
+  min-width: 0 !important;
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -68,6 +102,29 @@ html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"] {
   color: #ffffff !important;
   -moz-context-properties: fill, fill-opacity !important;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75)) !important;
+  opacity: 1 !important;
+  background-size: 60% !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  pointer-events: auto !important;
+}
+
+html[windowtype="Toolkit:PictureInPicture"] #unpip,
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"] {
+  position: absolute !important;
+  left: 2cqi !important;
+  right: auto !important;
+  top: 2cqi !important;
+  bottom: auto !important;
+}
+
+html[windowtype="Toolkit:PictureInPicture"] #playpause {
+  position: fixed !important;
+  left: 2cqi !important;
+  right: auto !important;
+  bottom: 2cqi !important;
+  top: auto !important;
+  grid-area: unset !important;
 }
 
 html[windowtype="Toolkit:PictureInPicture"] #unpip:hover,
@@ -75,7 +132,10 @@ html[windowtype="Toolkit:PictureInPicture"] #unpip:focus,
 html[windowtype="Toolkit:PictureInPicture"] #unpip:focus-visible,
 html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:hover,
 html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:focus,
-html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:focus-visible {
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:focus-visible,
+html[windowtype="Toolkit:PictureInPicture"] #playpause:hover,
+html[windowtype="Toolkit:PictureInPicture"] #playpause:focus,
+html[windowtype="Toolkit:PictureInPicture"] #playpause:focus-visible {
   background-color: transparent !important;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9)) !important;
 }
