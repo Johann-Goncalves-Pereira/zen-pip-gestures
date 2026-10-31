@@ -54,6 +54,17 @@ flowchart LR
 bottom bar kept showing after a plain file copy. Author sheets loaded through
 fx-autoconfig (or `loadSheetUsingURI`) are not subject to that CSP.
 
+### PiP-only — never main Zen
+
+- `.uc.css` header must end with `==/UserScript==*/`. An unclosed
+  `/* ==UserScript==` header drops `@include` and fx-autoconfig falls back to
+  **browser.xhtml**, which can hide titlebars / break the main window.
+- Every selector is gated with
+  `html[windowtype="Toolkit:PictureInPicture"]`.
+- UC.js injects with `AUTHOR_SHEET` only (not `AGENT_SHEET`).
+- Deploy by copying profile `chrome/` files; **do not** quit Zen or run the
+  full installer just to refresh PiP CSS — close and reopen the PiP window.
+
 Do **not** set `background:` shorthand or `background-image: none` on `#unpip`
 — the glyph is a `background-image` SVG; only clear `background-color`.
 
