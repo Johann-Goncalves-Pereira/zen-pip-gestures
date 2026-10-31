@@ -1,36 +1,18 @@
 /* ==UserScript==
 // @name           Zen PiP minimal controls
-// @description    Hide PiP chrome chrome; keep only top-left white #unpip (CSP-safe sheet)
+// @description    PiP-only: hide overlay chrome; keep top-left white #unpip
 // @include        chrome://global/content/pictureinpicture/player.xhtml
-// ==/UserScript==
+// ==/UserScript==*/
 
 /*
- * player.xhtml CSP is `default-src chrome:` — inline <style> from UC.js is ignored.
- * fx-autoconfig loads this as an author sheet via windowUtils.addSheet (chrome/file URI).
+ * PiP-only author sheet. Header MUST end with ==/UserScript==* / or fx-autoconfig
+ * treats a missing @include as "apply to browser.xhtml" and can wreck main Zen.
+ * player.xhtml CSP blocks inline <style>; this file is loaded via addSheet.
  */
 
-/* Zen sizes the titlebar/traffic-light strip from this token — keep it zero. */
-:root,
-:root #zen-appcontent-navbar-wrapper,
-:root[zen-single-toolbar="true"] #zen-appcontent-navbar-wrapper {
-  --zen-toolbar-height: 8px !important;
-}
-
-:root #titlebar,
-:root toolbox#navigator-toolbox,
-:root .titlebar-spacer {
-  display: none !important;
-  height: 0 !important;
-  max-height: 0 !important;
-  min-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  overflow: hidden !important;
-}
-
-:root #zen-pip-buttonbox-anchor,
-:root .titlebar-buttonbox-container#zen-pip-buttonbox-anchor {
+/* All rules gated to the PiP chrome window — never main browser.xhtml. */
+html[windowtype="Toolkit:PictureInPicture"] #zen-pip-buttonbox-anchor,
+html[windowtype="Toolkit:PictureInPicture"] .titlebar-buttonbox-container#zen-pip-buttonbox-anchor {
   position: fixed !important;
   left: 0 !important;
   top: 0 !important;
@@ -47,31 +29,20 @@
   pointer-events: none !important;
 }
 
-:root,
-body,
-.player-holder {
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-}
-
-/* Minimal PiP overlay: hide chrome controls; keep only Back-to-Tab. */
-#close,
-#minimize,
-#controls-bottom,
-#controls-bottom-gradient {
+html[windowtype="Toolkit:PictureInPicture"] #close,
+html[windowtype="Toolkit:PictureInPicture"] #minimize,
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom,
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom-gradient {
   display: none !important;
 }
 
-/* Top-left white #unpip icon with drop shadow (override macOS right align).
- * Keep background-image (SVG glyph); only clear the white pill fill. */
-#unpip,
-#unpip[mac="true"] {
+/* Keep SVG background-image; only clear the white pill fill. */
+html[windowtype="Toolkit:PictureInPicture"] #unpip,
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"] {
   position: absolute !important;
   left: 10px !important;
   right: auto !important;
   top: 10px !important;
-  /* Do not use `background:` shorthand — it would clear the SVG background-image. */
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -83,14 +54,14 @@ body,
   opacity: 1 !important;
 }
 
-#unpip:hover,
-#unpip:focus,
-#unpip:focus-visible,
-#unpip[mac="true"]:hover,
-#unpip[mac="true"]:focus,
-#unpip[mac="true"]:focus-visible,
-#unpip:is(:hover, :focus-visible),
-#unpip[mac="true"]:is(:hover, :focus-visible) {
+html[windowtype="Toolkit:PictureInPicture"] #unpip:hover,
+html[windowtype="Toolkit:PictureInPicture"] #unpip:focus,
+html[windowtype="Toolkit:PictureInPicture"] #unpip:focus-visible,
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:hover,
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:focus,
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:focus-visible,
+html[windowtype="Toolkit:PictureInPicture"] #unpip:is(:hover, :focus-visible),
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:is(:hover, :focus-visible) {
   background-color: transparent !important;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9)) !important;
 }

@@ -25,32 +25,10 @@
     }
   }
 
+  // PiP-only — every selector gated to Toolkit:PictureInPicture (never browser.xhtml).
   const INLINE_CSS = `
-/* Zen sizes the titlebar/traffic-light strip from this token — always 0. */
-:root,
-:root #zen-appcontent-navbar-wrapper,
-:root[zen-single-toolbar="true"] #zen-appcontent-navbar-wrapper {
-  --zen-toolbar-height: 8px !important;
-}
-
-/* Kill any XUL titlebar chrome / strip */
-:root #titlebar,
-:root toolbox#navigator-toolbox,
-:root .titlebar-spacer {
-  display: none !important;
-  height: 0 !important;
-  max-height: 0 !important;
-  min-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  overflow: hidden !important;
-}
-
-/* Keep buttonbox in layout (0×0) — do NOT display:none the container we use
-   for Cocoa placeWindowButtons */
-:root .titlebar-buttonbox-container#zen-pip-buttonbox-anchor,
-:root #zen-pip-buttonbox-anchor {
+html[windowtype="Toolkit:PictureInPicture"] .titlebar-buttonbox-container#zen-pip-buttonbox-anchor,
+html[windowtype="Toolkit:PictureInPicture"] #zen-pip-buttonbox-anchor {
   position: fixed !important;
   left: 0 !important;
   top: 0 !important;
@@ -69,44 +47,15 @@
   -moz-appearance: none !important;
 }
 
-:root .titlebar-buttonbox,
-:root .titlebar-button,
-:root .titlebar-close,
-:root .titlebar-min,
-:root .titlebar-max {
-  width: 0 !important;
-  height: 0 !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  appearance: none !important;
-  -moz-appearance: none !important;
-}
-
-/* Full-bleed player — no top inset for a fake titlebar */
-:root,
-body,
-.player-holder {
-  margin: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-}
-
-/* Minimal PiP overlay: hide chrome controls; keep only Back-to-Tab. */
-#close,
-#minimize,
-#controls-bottom,
-#controls-bottom-gradient {
+html[windowtype="Toolkit:PictureInPicture"] #close,
+html[windowtype="Toolkit:PictureInPicture"] #minimize,
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom,
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom-gradient {
   display: none !important;
 }
 
-/* Top-left white #unpip icon with drop shadow (override macOS right align).
- * Do not clear background-image — that SVG is the icon glyph. */
-#unpip,
-#unpip[mac="true"] {
+html[windowtype="Toolkit:PictureInPicture"] #unpip,
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"] {
   position: absolute !important;
   left: 10px !important;
   right: auto !important;
@@ -121,12 +70,12 @@ body,
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75)) !important;
 }
 
-#unpip:hover,
-#unpip:focus,
-#unpip:focus-visible,
-#unpip[mac="true"]:hover,
-#unpip[mac="true"]:focus,
-#unpip[mac="true"]:focus-visible {
+html[windowtype="Toolkit:PictureInPicture"] #unpip:hover,
+html[windowtype="Toolkit:PictureInPicture"] #unpip:focus,
+html[windowtype="Toolkit:PictureInPicture"] #unpip:focus-visible,
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:hover,
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:focus,
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:focus-visible {
   background-color: transparent !important;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9)) !important;
 }
@@ -159,9 +108,10 @@ body,
       const uri = Services.io.newURI(
         "data:text/css;charset=utf-8," + encodeURIComponent(INLINE_CSS)
       );
+      // Author sheet on this PiP window only (not a global agent sheet).
       window.windowUtils.loadSheetUsingURI(
         uri,
-        Ci.nsIDOMWindowUtils.AGENT_SHEET
+        Ci.nsIDOMWindowUtils.AUTHOR_SHEET
       );
       sheetLoaded = true;
       return;
