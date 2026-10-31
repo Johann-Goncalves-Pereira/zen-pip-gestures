@@ -101,7 +101,9 @@ func stepCopyApp(cfg *Config) error {
 	if err := os.MkdirAll(cfg.Zen.HomeApplications, 0o755); err != nil {
 		return err
 	}
-	if stock != "" && stock != dst {
+	// /Applications/Zen.app is often a symlink into ~/Applications — never
+	// RemoveAll+ditto when both paths resolve to the same bundle.
+	if stock != "" && !sameResolvedPath(stock, dst) {
 		if err := os.RemoveAll(dst); err != nil {
 			return err
 		}
@@ -113,6 +115,20 @@ func stepCopyApp(cfg *Config) error {
 		return fmt.Errorf("Zen.app not found after copy")
 	}
 	return nil
+}
+
+// sameResolvedPath is true when both paths exist and EvalSymlinks agrees,
+// or when the string paths are equal. Missing dst is not "same".
+func sameResolvedPath(a, b string) bool {
+	if a == b {
+		return true
+	}
+	ra, ea := filepath.EvalSymlinks(a)
+	rb, eb := filepath.EvalSymlinks(b)
+	if ea != nil || eb != nil {
+		return false
+	}
+	return ra == rb
 }
 
 func stepFxAutoconfig(cfg *Config) error {
