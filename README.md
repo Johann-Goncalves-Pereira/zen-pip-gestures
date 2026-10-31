@@ -131,6 +131,9 @@ After flipping a toggle, reopen the PiP window (or restart Zen) so it takes effe
 
 ## 🔄 Update
 
+**All features** (new and existing chrome JS/CSS) are installed on your machine
+through this Update path — do not hand-copy profile files for delivery.
+
 Paste the same `curl … | bash` one-liner again (fetches the newest Release binary), or:
 
 ```bash
