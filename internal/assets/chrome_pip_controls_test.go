@@ -8,7 +8,7 @@ import (
 )
 
 // TestPiPControlsOverlayMinimalUnpip asserts BR-pip-02 and BR-pip-03:
-// companion CSS and INLINE_CSS hide chrome overlays and leave only a
+// companion CSS / .uc.css and INLINE_CSS hide chrome overlays and leave only a
 // top-left white Back-to-Tab (#unpip) with drop shadow.
 func TestPiPControlsOverlayMinimalUnpip(t *testing.T) {
 	t.Parallel()
@@ -17,14 +17,19 @@ func TestPiPControlsOverlayMinimalUnpip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read companion CSS: %v", err)
 	}
+	ucCSS, err := assets.Chrome.ReadFile("chrome/CSS/zen-pip-no-traffic-lights.uc.css")
+	if err != nil {
+		t.Fatalf("read fx-autoconfig .uc.css: %v", err)
+	}
 	js, err := assets.Chrome.ReadFile("chrome/JS/zen-pip-no-traffic-lights.uc.js")
 	if err != nil {
 		t.Fatalf("read PiP script: %v", err)
 	}
 
 	sources := map[string]string{
-		"chrome/CSS/zen-pip-no-traffic-lights.css":  string(css),
-		"chrome/JS/zen-pip-no-traffic-lights.uc.js": string(js),
+		"chrome/CSS/zen-pip-no-traffic-lights.css":    string(css),
+		"chrome/CSS/zen-pip-no-traffic-lights.uc.css": string(ucCSS),
+		"chrome/JS/zen-pip-no-traffic-lights.uc.js":   string(js),
 	}
 
 	hideNeedles := []string{
@@ -40,7 +45,6 @@ func TestPiPControlsOverlayMinimalUnpip(t *testing.T) {
 		"left: 10px !important",
 		"right: auto !important",
 		"top: 10px !important",
-		"background: transparent !important",
 		"background-color: transparent !important",
 		"fill: #ffffff !important",
 		"fill-opacity: 1 !important",
@@ -60,5 +64,18 @@ func TestPiPControlsOverlayMinimalUnpip(t *testing.T) {
 				t.Errorf("%s missing #unpip rule fragment %q", path, needle)
 			}
 		}
+		// Shorthand `background:` would clear the SVG glyph background-image.
+		if strings.Contains(body, "background: transparent") ||
+			strings.Contains(body, "background-image: none") {
+			t.Errorf("%s must not clear #unpip background-image via shorthand/none", path)
+		}
+	}
+
+	jsBody := string(js)
+	if !strings.Contains(jsBody, "loadSheetUsingURI") {
+		t.Error("uc.js must inject via windowUtils.loadSheetUsingURI (CSP blocks inline <style>)")
+	}
+	if !strings.Contains(string(ucCSS), "@include        chrome://global/content/pictureinpicture/player.xhtml") {
+		t.Error(".uc.css must @include the PiP player.xhtml so fx-autoconfig injects it")
 	}
 }
