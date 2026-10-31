@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           Zen PiP hide traffic lights
-// @description    Hide macOS traffic lights / titlebar strip on the PiP window
+// @description    Hide macOS traffic lights / titlebar strip; minimal PiP controls (only #unpip)
 // @include        chrome://global/content/pictureinpicture/player.xhtml
 // ==/UserScript==
 
@@ -93,6 +93,43 @@ body,
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
+}
+
+/* Minimal PiP overlay: hide chrome controls; keep only Back-to-Tab. */
+#close,
+#minimize,
+#controls-bottom,
+#controls-bottom-gradient {
+  display: none !important;
+}
+
+/* Top-left white #unpip icon with drop shadow (override macOS right align). */
+#unpip,
+#unpip[mac="true"] {
+  left: 10px !important;
+  right: auto !important;
+  top: 10px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  fill: #ffffff !important;
+  fill-opacity: 1 !important;
+  color: #ffffff !important;
+  -moz-context-properties: fill, fill-opacity !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75)) !important;
+}
+
+#unpip:hover,
+#unpip:focus,
+#unpip:focus-visible,
+#unpip[mac="true"]:hover,
+#unpip[mac="true"]:focus,
+#unpip[mac="true"]:focus-visible {
+  background: transparent !important;
+  background-color: transparent !important;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9)) !important;
 }
 `;
 

@@ -35,3 +35,5 @@ behavior exists.
 | BR-autopip-03 | Closing PiP must clear Firefox `browserWeakMap` / `weakAutoPipBrowserToParent` (no raw-only `win.close`) | product/auto-pip | auto-focus | manual (log must not stick on `skip-already-pip`) | fail-closed |
 | BR-autopip-04 | AutoToggle must run while media can still report playing (do not force `docShellIsActive=false` first) | product/auto-pip | auto-focus | manual | fail-closed |
 | BR-pip-01 | With `zen.pip.onlyOne.enabled` (default true), opening a PiP closes every other PiP window | product | only-one | manual | fail-closed |
+| BR-pip-02 | PiP overlay hides `#close`, `#minimize`, `#controls-bottom`, and `#controls-bottom-gradient` | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-03 | PiP `#unpip` is top-left, transparent, white, with drop-shadow (incl. mac override) | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
