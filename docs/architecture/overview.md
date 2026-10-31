@@ -16,7 +16,8 @@
 
 1. Bootstrap fetches `zen-pip-install-darwin-{arm64,amd64}` from GitHub Releases.
 2. TUI confirms Zen exists (or guides official install + retry).
-3. User multi-selects profiles; optional feature toggles write `user.js`.
+3. User multi-selects profiles; optional feature toggles write `user.js`
+   (size prefs stay out of `user.js` — see [Prefs](../product/prefs.md)).
 4. Steps: quit Zen → ditto to `~/Applications` → fx-autoconfig → codesign →
    merge profile chrome → embed-copy PiP scripts → LaunchAgent.
 5. Failures map to Common-error recovery (retry / skip / abort).
