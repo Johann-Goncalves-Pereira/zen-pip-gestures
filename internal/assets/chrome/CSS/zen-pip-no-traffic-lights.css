@@ -1,4 +1,6 @@
-/* Injected companion for zen-pip-no-traffic-lights.uc.js (PiP has no userChrome.css). */
+/* Mirror of zen-pip-no-traffic-lights.uc.css (fx-autoconfig only loads *.uc.css).
+ * Kept for docs/tests and rsync into internal/assets. Do not use `background:`
+ * shorthand on #unpip — it clears the SVG background-image. */
 
 /* Zen sizes the titlebar/traffic-light strip from this token — keep it zero. */
 :root,
@@ -49,12 +51,11 @@ body,
 /* Top-left white #unpip icon with drop shadow (override macOS right align). */
 #unpip,
 #unpip[mac="true"] {
+  position: absolute !important;
   left: 10px !important;
   right: auto !important;
   top: 10px !important;
-  background: transparent !important;
   background-color: transparent !important;
-  background-image: none !important;
   border: none !important;
   box-shadow: none !important;
   fill: #ffffff !important;
@@ -70,7 +71,6 @@ body,
 #unpip[mac="true"]:hover,
 #unpip[mac="true"]:focus,
 #unpip[mac="true"]:focus-visible {
-  background: transparent !important;
   background-color: transparent !important;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9)) !important;
 }

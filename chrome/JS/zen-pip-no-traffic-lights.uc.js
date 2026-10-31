@@ -103,15 +103,15 @@ body,
   display: none !important;
 }
 
-/* Top-left white #unpip icon with drop shadow (override macOS right align). */
+/* Top-left white #unpip icon with drop shadow (override macOS right align).
+ * Do not clear background-image — that SVG is the icon glyph. */
 #unpip,
 #unpip[mac="true"] {
+  position: absolute !important;
   left: 10px !important;
   right: auto !important;
   top: 10px !important;
-  background: transparent !important;
   background-color: transparent !important;
-  background-image: none !important;
   border: none !important;
   box-shadow: none !important;
   fill: #ffffff !important;
@@ -127,11 +127,12 @@ body,
 #unpip[mac="true"]:hover,
 #unpip[mac="true"]:focus,
 #unpip[mac="true"]:focus-visible {
-  background: transparent !important;
   background-color: transparent !important;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9)) !important;
 }
 `;
+
+  let sheetLoaded = false;
 
   function ensureRootAttrs() {
     const root = document.documentElement;
@@ -145,14 +146,28 @@ body,
     root.setAttribute("tabsintitlebar", "true");
   }
 
+  /**
+   * player.xhtml CSP is `default-src chrome:` — a DOM <style> element is ignored.
+   * Prefer windowUtils.loadSheetUsingURI (privileged) so rules actually apply.
+   * zen-pip-no-traffic-lights.uc.css is the primary path via fx-autoconfig.
+   */
   function injectCss() {
-    let style = document.getElementById("zen-pip-no-traffic-lights-style");
-    if (!style) {
-      style = document.createElement("style");
-      style.id = "zen-pip-no-traffic-lights-style";
-      (document.head || document.documentElement).appendChild(style);
+    if (sheetLoaded) {
+      return;
     }
-    style.textContent = INLINE_CSS;
+    try {
+      const uri = Services.io.newURI(
+        "data:text/css;charset=utf-8," + encodeURIComponent(INLINE_CSS)
+      );
+      window.windowUtils.loadSheetUsingURI(
+        uri,
+        Ci.nsIDOMWindowUtils.AGENT_SHEET
+      );
+      sheetLoaded = true;
+      return;
+    } catch (_) {
+      /* fall through — .uc.css author sheet still applies when present */
+    }
   }
 
   /**
