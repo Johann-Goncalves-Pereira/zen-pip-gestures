@@ -37,3 +37,4 @@ behavior exists.
 | BR-pip-01 | With `zen.pip.onlyOne.enabled` (default true), opening a PiP closes every other PiP window | product | only-one | manual | fail-closed |
 | BR-pip-02 | PiP overlay hides `#close`, `#minimize`, `#controls-bottom`, and `#controls-bottom-gradient` | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
 | BR-pip-03 | PiP `#unpip` is top-left, transparent, white, with drop-shadow (incl. mac override) | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-04 | PiP control CSS ships as `.uc.css` `@include` player.xhtml and UC.js uses `loadSheetUsingURI` (CSP-safe) | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |

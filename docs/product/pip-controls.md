@@ -43,8 +43,19 @@ flowchart LR
 
 | File | Role |
 | ---- | ---- |
-| `chrome/CSS/zen-pip-no-traffic-lights.css` | Companion stylesheet |
-| `chrome/JS/zen-pip-no-traffic-lights.uc.js` | `INLINE_CSS` injected into the PiP document (PiP has no `userChrome.css`) |
+| `chrome/CSS/zen-pip-no-traffic-lights.uc.css` | **Primary** — fx-autoconfig author sheet (`@include` player.xhtml). Bypasses PiP CSP. |
+| `chrome/CSS/zen-pip-no-traffic-lights.css` | Mirror for docs/tests / embed sync (not loaded by fx-autoconfig; only `*.uc.css` is) |
+| `chrome/JS/zen-pip-no-traffic-lights.uc.js` | Cocoa buttonbox hide + `windowUtils.loadSheetUsingURI` backup for `INLINE_CSS` |
+
+### Why not a DOM `<style>` tag?
+
+`player.xhtml` ships `Content-Security-Policy: default-src chrome:`. An inline
+`<style>` appended by UC.js is ignored, which is why close / minimize / the
+bottom bar kept showing after a plain file copy. Author sheets loaded through
+fx-autoconfig (or `loadSheetUsingURI`) are not subject to that CSP.
+
+Do **not** set `background:` shorthand or `background-image: none` on `#unpip`
+— the glyph is a `background-image` SVG; only clear `background-color`.
 
 `./scripts/validate` rsyncs `chrome/` into `internal/assets/chrome/` for the
 installer embed.
