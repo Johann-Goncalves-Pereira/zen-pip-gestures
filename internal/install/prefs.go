@@ -29,6 +29,13 @@ func DefaultFeatureToggles() FeatureToggles {
 	}
 }
 
+// userJSStripPrefs must never stay in user.js. Firefox reapplies user.js every
+// startup; leaving these here wiped about:config min/max width on quit/reopen.
+var userJSStripPrefs = map[string]struct{}{
+	"zen.pip.gestures.minWidth": {},
+	"zen.pip.gestures.maxWidth": {},
+}
+
 // WriteUserPrefs merges required prefs into profile/user.js.
 func WriteUserPrefs(profilePath string, t FeatureToggles) error {
 	path := profilePath + "/user.js"
@@ -52,6 +59,9 @@ func WriteUserPrefs(profilePath string, t FeatureToggles) error {
 			name, ok := parseUserPrefLine(line)
 			if !ok {
 				other = append(other, line)
+				continue
+			}
+			if _, strip := userJSStripPrefs[name]; strip {
 				continue
 			}
 			if _, keep := prefs[name]; keep {

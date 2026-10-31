@@ -121,8 +121,8 @@ Extra / size:
 | Pref | Default | Meaning |
 |---|---|---|
 | `zen.pip.trackpadGestures.enabled` | `true` ✅ | Master — `false` disables **both** pan and pinch |
-| `zen.pip.gestures.minWidth` | `200` 📏 | Smallest PiP width (px) |
-| `zen.pip.gestures.maxWidth` | `900` 📐 | Largest PiP width (px) |
+| `zen.pip.gestures.minWidth` | `200` 📏 | Smallest PiP width (px) — set in about:config; **not** forced via `user.js` |
+| `zen.pip.gestures.maxWidth` | `900` 📐 | Largest PiP width (px) — set in about:config; **not** forced via `user.js` |
 | `media.videocontrols.picture-in-picture.enable-when-switching-tabs.enabled` | `true` ✅ | Built-in auto-PiP on tab switch (also required for Space auto-PiP) |
 
 After flipping a toggle, reopen the PiP window (or restart Zen) so it takes effect.
