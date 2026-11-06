@@ -16,26 +16,37 @@
 (function () {
   "use strict";
 
+  let logStream = null;
+
+  function openLogStream() {
+    if (logStream) {
+      return logStream;
+    }
+    const f = Cc["@mozilla.org/file/directory_service;1"]
+      .getService(Ci.nsIProperties)
+      .get("Home", Ci.nsIFile);
+    f.append("Library");
+    f.append("Logs");
+    if (!f.exists()) {
+      f.create(Ci.nsIFile.DIRECTORY_TYPE, 0o755);
+    }
+    f.append("zen-pip-scripts.log");
+    const fos = Cc["@mozilla.org/network/file-output-stream;1"].createInstance(
+      Ci.nsIFileOutputStream
+    );
+    // PR_WRONLY | PR_CREATE_FILE | PR_APPEND. Held for the session.
+    fos.init(f, 0x02 | 0x08 | 0x10, 0o644, 0);
+    logStream = fos;
+    return logStream;
+  }
+
   function mark(msg) {
     try {
-      const f = Cc["@mozilla.org/file/directory_service;1"]
-        .getService(Ci.nsIProperties)
-        .get("Home", Ci.nsIFile);
-      f.append("Library");
-      f.append("Logs");
-      if (!f.exists()) {
-        f.create(Ci.nsIFile.DIRECTORY_TYPE, 0o755);
-      }
-      f.append("zen-pip-scripts.log");
-      const fos = Cc[
-        "@mozilla.org/network/file-output-stream;1"
-      ].createInstance(Ci.nsIFileOutputStream);
-      fos.init(f, 0x02 | 0x08 | 0x10, 0o644, 0);
+      const fos = openLogStream();
       const line = `autofocus ${msg} ${new Date().toISOString()}\n`;
       fos.write(line, line.length);
-      fos.close();
     } catch (_) {
-      /* ignore */
+      logStream = null;
     }
   }
 
@@ -47,6 +58,8 @@
   const PREF_AUTO_SPACE = "zen.pip.autoSpace.enabled";
   const PREF_ONLY_ONE = "zen.pip.onlyOne.enabled";
   const SETTLE_MS = 200;
+  const PIP_CLEAR_CAP_MS = 200;
+  const PIP_OPEN_CAP_MS = 700;
 
   /** Frontmost apps that keep Zen visible underneath — do not auto-PiP. */
   const OVERLAY_BUNDLE_IDS = [
@@ -82,6 +95,10 @@
   let settleTimer = 0;
   let lastSelectedBrowser = null;
   let macFrontmost = null;
+  /** @type {{ gen: number, browser: object|null }} */
+  const attempt = { gen: 0, browser: null };
+  /** @type {Promise<void>|null} */
+  let inFlight = null;
 
   function prefsAllow() {
     try {
@@ -192,14 +209,17 @@
     }
   }
 
-  function isOverlayFrontmost() {
-    const id = getFrontmostBundleId();
+  function isOverlayBundle(id) {
     if (!id) {
       return false;
     }
     return OVERLAY_BUNDLE_IDS.some(
       (b) => id === b || id.startsWith(b + ".") || id.startsWith(b)
     );
+  }
+
+  function stillCurrent(gen) {
+    return gen === attempt.gen;
   }
 
   function windowNotVisible(chromeWin) {
@@ -356,7 +376,153 @@
     return false;
   }
 
-  async function tryAutoPipForBrowser(chromeWin, browser, reason) {
+  function waitForWindowSignal(chromeWin, gen, capMs, topic, ready) {
+    if (!stillCurrent(gen)) {
+      return Promise.resolve(false);
+    }
+    if (ready()) {
+      return Promise.resolve(true);
+    }
+    return new Promise((resolve) => {
+      let settled = false;
+      let timer = 0;
+      const observer = {
+        observe(_subject, observedTopic) {
+          if (settled || observedTopic !== topic) {
+            return;
+          }
+          if (!stillCurrent(gen)) {
+            finish(false);
+            return;
+          }
+          if (ready()) {
+            finish(true);
+          }
+        },
+      };
+      function finish(ok) {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        try {
+          Services.ww.unregisterNotification(observer);
+        } catch (_) {
+          /* observer already removed */
+        }
+        if (timer) {
+          chromeWin.clearTimeout(timer);
+        }
+        resolve(ok);
+      }
+      try {
+        Services.ww.registerNotification(observer);
+      } catch (ex) {
+        mark("ww-listen-fail:" + ex);
+        resolve(false);
+        return;
+      }
+      timer = chromeWin.setTimeout(() => {
+        finish(stillCurrent(gen) && ready());
+      }, capMs);
+    });
+  }
+
+  function waitUntilNoPip(chromeWin, gen) {
+    return waitForWindowSignal(
+      chromeWin,
+      gen,
+      PIP_CLEAR_CAP_MS,
+      "domwindowclosed",
+      () => !anyPipOpen()
+    );
+  }
+
+  function waitForPipOpen(chromeWin, browser, gen) {
+    const ready = () => anyPipOpen() || !!livePipWindowForBrowser(browser);
+    if (!stillCurrent(gen)) {
+      return Promise.resolve(false);
+    }
+    if (ready()) {
+      return Promise.resolve(true);
+    }
+    return new Promise((resolve) => {
+      let settled = false;
+      let timer = 0;
+      const observer = {
+        observe(subject, observedTopic) {
+          if (settled || observedTopic !== "domwindowopened") {
+            return;
+          }
+          const win = subject;
+          const check = () => {
+            if (settled) {
+              return;
+            }
+            if (!stillCurrent(gen)) {
+              finish(false);
+              return;
+            }
+            if (ready() || isPipWindow(win)) {
+              finish(true);
+            }
+          };
+          try {
+            if (win?.document?.readyState === "loading") {
+              win.addEventListener("DOMContentLoaded", check, { once: true });
+              return;
+            }
+          } catch (_) {
+            /* window went away before we could listen */
+          }
+          check();
+        },
+      };
+      function finish(ok) {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        try {
+          Services.ww.unregisterNotification(observer);
+        } catch (_) {
+          /* observer already removed */
+        }
+        if (timer) {
+          chromeWin.clearTimeout(timer);
+        }
+        resolve(ok);
+      }
+      try {
+        Services.ww.registerNotification(observer);
+      } catch (ex) {
+        mark("ww-listen-fail:" + ex);
+        resolve(false);
+        return;
+      }
+      timer = chromeWin.setTimeout(() => {
+        finish(stillCurrent(gen) && ready());
+      }, PIP_OPEN_CAP_MS);
+    });
+  }
+
+  function requestAutoPip(chromeWin, browser, reason) {
+    const gen = ++attempt.gen;
+    attempt.browser = browser;
+    const run = tryAutoPipForBrowser(chromeWin, browser, reason, gen).catch(
+      (ex) => {
+        mark("attempt-fail:" + ex);
+      }
+    );
+    inFlight = run;
+    run.finally(() => {
+      if (inFlight === run) {
+        inFlight = null;
+      }
+    });
+  }
+
+  async function tryAutoPipForBrowser(chromeWin, browser, reason, gen) {
     if (!prefsAllow()) {
       mark("skip-prefs");
       return;
@@ -388,8 +554,14 @@
       }
       closeAllPips();
       mark("replaced-other-pip:" + reason);
-      // Let Firefox finish unload / map cleanup before AutoToggle.
-      await new Promise((r) => chromeWin.setTimeout(r, 50));
+      const cleared = await waitUntilNoPip(chromeWin, gen);
+      if (!stillCurrent(gen)) {
+        mark("stale:" + reason);
+        return;
+      }
+      if (!cleared) {
+        mark("pip-clear-cap:" + reason);
+      }
     }
 
     const wgp = browser.browsingContext?.currentWindowGlobal;
@@ -412,6 +584,11 @@
 
     // Do NOT set docShellIsActive=false before AutoToggle. That can pause the
     // video before the child's videoIsPlaying check (esp. Space/deactivate).
+    if (!stillCurrent(gen)) {
+      mark("stale:" + reason);
+      return;
+    }
+
     try {
       actor.sendAsyncMessage("PictureInPicture:AutoToggle");
       mark("autotoggle-sent:" + reason);
@@ -420,8 +597,12 @@
       return;
     }
 
-    await new Promise((r) => chromeWin.setTimeout(r, 700));
-    if (anyPipOpen() || livePipWindowForBrowser(browser)) {
+    const opened = await waitForPipOpen(chromeWin, browser, gen);
+    if (!stillCurrent(gen)) {
+      mark("stale:" + reason);
+      return;
+    }
+    if (opened) {
       openedByUs.add(browser);
       mark("opened:" + reason);
       return;
@@ -436,8 +617,12 @@
       mark("no-pip:" + reason);
       return;
     }
-    await new Promise((r) => chromeWin.setTimeout(r, 700));
-    if (anyPipOpen() || livePipWindowForBrowser(browser)) {
+    const openedRetry = await waitForPipOpen(chromeWin, browser, gen);
+    if (!stillCurrent(gen)) {
+      mark("stale:" + reason);
+      return;
+    }
+    if (openedRetry) {
       openedByUs.add(browser);
       mark("opened-retry:" + reason);
     } else {
@@ -450,6 +635,9 @@
       return;
     }
     const browser = getSelectedBrowser(chromeWin);
+    if (browser && attempt.browser === browser) {
+      attempt.gen += 1;
+    }
     if (!browser || !openedByUs.has(browser)) {
       return;
     }
@@ -479,25 +667,18 @@
     } catch (_) {
       /* ignore */
     }
-    if (isOverlayFrontmost()) {
-      mark("skip-overlay:" + getFrontmostBundleId());
+    const front = getFrontmostBundleId();
+    if (isOverlayBundle(front)) {
+      mark("skip-overlay:" + front);
       return;
     }
     // Space / Stage Manager / other app — content no longer what user is looking at.
-    tryAutoPipForBrowser(
-      chromeWin,
-      getSelectedBrowser(chromeWin),
-      "deactivate"
-    );
+    requestAutoPip(chromeWin, getSelectedBrowser(chromeWin), "deactivate");
   }
 
   function onOcclusionOrSize(chromeWin) {
     if (windowNotVisible(chromeWin)) {
-      tryAutoPipForBrowser(
-        chromeWin,
-        getSelectedBrowser(chromeWin),
-        "occluded"
-      );
+      requestAutoPip(chromeWin, getSelectedBrowser(chromeWin), "occluded");
     } else {
       unpipIfOurs(chromeWin, "visible");
     }
@@ -524,7 +705,7 @@
       const prev = lastSelectedBrowser;
       lastSelectedBrowser = getSelectedBrowser(chromeWin);
       if (prev && prev !== lastSelectedBrowser) {
-        tryAutoPipForBrowser(chromeWin, prev, "tab-switch");
+        requestAutoPip(chromeWin, prev, "tab-switch");
       }
       // Returning to a tab we auto-PiP'd → close that PiP.
       if (
