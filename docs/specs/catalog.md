@@ -27,6 +27,8 @@ behavior exists.
 | BR-install-03 | `ParseProfilesIni` returns every Profile section with resolved absolute path; Default=1 is marked | product | install | `TestParseProfilesIni` | asserted-unit |
 | BR-install-04 | Profiles without `prefs.js` are omitted from selectable list | product | install | `TestListSelectableProfiles` | asserted-unit |
 | BR-install-05 | `WriteUserPrefs` does not write or preserve `zen.pip.gestures.minWidth` / `maxWidth` in `user.js` | product/prefs | install | `TestWriteUserPrefsStripsGestureWidthPrefs` | asserted-unit |
+| BR-install-06 | Quit polls until Zen's process is gone or the deadline passes | architecture | install | `TestQuitWaitsUntilProcessGone` | asserted-unit |
+| BR-install-07 | Skip ditto when home `CFBundleVersion` matches stock and the home app is already patched | architecture | install | `TestSkipCopyWhenSamePatchedBuild` | asserted-unit |
 | UC-install-01 | Missing Zen → official install hints; retry re-checks filesystem | product | install | `TestZenMissingHints` | asserted-unit |
 | BR-toolbar-01 | Main chrome forces `--zen-toolbar-height` / `--zen-toolbar-height-with-bookmarks` to 8px and hides titlebar buttons | product | chrome | manual (Browser Toolbox) | fail-closed |
 | BR-toolbar-02 | Hover must not apply negative `margin-top` on `.browserContainer` (`has-toolbar-hovered`) | product | chrome | manual + `zen.view.shift-down-site-on-hover=true` | fail-closed |
@@ -35,6 +37,15 @@ behavior exists.
 | BR-autopip-03 | Closing PiP must clear Firefox `browserWeakMap` / `weakAutoPipBrowserToParent` (no raw-only `win.close`) | product/auto-pip | auto-focus | manual (log must not stick on `skip-already-pip`) | fail-closed |
 | BR-autopip-04 | AutoToggle must run while media can still report playing (do not force `docShellIsActive=false` first) | product/auto-pip | auto-focus | manual | fail-closed |
 | BR-pip-01 | With `zen.pip.onlyOne.enabled` (default true), opening a PiP closes every other PiP window | product | only-one | manual | fail-closed |
-| BR-pip-02 | PiP overlay hides `#close`, `#minimize`, `#controls-bottom`, and `#controls-bottom-gradient` | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-02 | PiP overlay hides `#close`, `#minimize`, `#controls-bottom-gradient`, scrubber/seek/end clusters — not the whole `#controls-bottom` | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
 | BR-pip-03 | PiP `#unpip` is top-left, transparent, white, with drop-shadow (incl. mac override) | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
 | BR-pip-04 | PiP control CSS ships as `.uc.css` `@include` player.xhtml and UC.js uses `loadSheetUsingURI` (CSP-safe) | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-05 | PiP control CSS tooltips (`::after` / `attr(tooltip)`) are suppressed so labels cannot clip | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-06 | `#controls` is a size container; `#unpip` and `#playpause` size/inset with `cqi` | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-07 | `#playpause` is bottom-left, transparent white icon with drop-shadow (play/pause toggle only) | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-08 | PiP `#unpip` and `#playpause` are capped at 48px (`max-width: 48px`, `max-height: 48px`) | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-09 | PiP `#unpip` and `#playpause` hide until hover, and stay hidden when the window is inactive or clicked out | product/pip-controls | chrome | `TestPiPControlsOverlayMinimalUnpip` | asserted-unit |
+| BR-pip-10 | Traffic-light apply does not dispatch `resize` or reschedule itself from `resize`; a `MutationObserver` reapplies when the button box is gone | product/pip-controls | chrome | `TestPiPApplyDoesNotRescheduleFromResize` | asserted-unit |
+| BR-install-08 | Skip ditto when `/Applications/Zen.app` resolves to the same bundle as `~/Applications/Zen.app` | architecture | install | `TestStepCopyAppSkipsWhenApplicationsSymlinksHome` | asserted-unit |
+| BR-autopip-05 | One in-flight Auto-PiP per window; waits wake on PiP window open/close and deactivate reads the frontmost bundle id once | product/auto-pip | auto-focus | `TestAutoPipWakesOnPipWindow` | asserted-unit |
+| BR-gesture-01 | Gesture smoothing keeps one animation-frame id for the whole tick | architecture | gestures | `TestGestureKeepsSingleFrame` | asserted-unit |
