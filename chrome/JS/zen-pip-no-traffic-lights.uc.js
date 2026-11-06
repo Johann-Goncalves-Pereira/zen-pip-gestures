@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           Zen PiP hide traffic lights
-// @description    Hide macOS traffic lights / titlebar strip; minimal PiP controls (only #unpip)
+// @description    Hide macOS traffic lights; PiP #unpip + #playpause (cqi, hide until hover)
 // @include        chrome://global/content/pictureinpicture/player.xhtml
 // ==/UserScript==
 
@@ -47,19 +47,55 @@ html[windowtype="Toolkit:PictureInPicture"] #zen-pip-buttonbox-anchor {
   -moz-appearance: none !important;
 }
 
-html[windowtype="Toolkit:PictureInPicture"] #close,
-html[windowtype="Toolkit:PictureInPicture"] #minimize,
-html[windowtype="Toolkit:PictureInPicture"] #controls-bottom,
-html[windowtype="Toolkit:PictureInPicture"] #controls-bottom-gradient {
+html[windowtype="Toolkit:PictureInPicture"] #controls {
+  container-type: size !important;
+  container-name: zen-pip !important;
+}
+
+html[windowtype="Toolkit:PictureInPicture"] .control-item:hover::after,
+html[windowtype="Toolkit:PictureInPicture"] .control-item:focus-visible::after,
+html[windowtype="Toolkit:PictureInPicture"] .control-item::after {
+  content: none !important;
   display: none !important;
 }
 
+html[windowtype="Toolkit:PictureInPicture"] #close,
+html[windowtype="Toolkit:PictureInPicture"] #minimize,
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom-gradient,
+html[windowtype="Toolkit:PictureInPicture"] .controls-bottom-upper,
+html[windowtype="Toolkit:PictureInPicture"] .start-controls,
+html[windowtype="Toolkit:PictureInPicture"] .end-controls,
+html[windowtype="Toolkit:PictureInPicture"] #seekBackward,
+html[windowtype="Toolkit:PictureInPicture"] #seekForward,
+html[windowtype="Toolkit:PictureInPicture"] #timestamp {
+  display: none !important;
+}
+
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom {
+  pointer-events: none !important;
+  bottom: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom .controls-bottom-lower,
+html[windowtype="Toolkit:PictureInPicture"] #controls-bottom .center-controls {
+  display: block !important;
+  margin: 0 !important;
+  grid-template-columns: none !important;
+  grid-template-areas: none !important;
+  justify-self: start !important;
+}
+
+/* Shared corner-icon treatment (keep SVG background-image). Capped at 48px max. */
 html[windowtype="Toolkit:PictureInPicture"] #unpip,
-html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"] {
-  position: absolute !important;
-  left: 10px !important;
-  right: auto !important;
-  top: 10px !important;
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"],
+html[windowtype="Toolkit:PictureInPicture"] #playpause {
+  width: 8cqi !important;
+  height: 8cqi !important;
+  max-width: 48px !important;
+  max-height: 48px !important;
+  min-width: 0 !important;
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -68,16 +104,66 @@ html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"] {
   color: #ffffff !important;
   -moz-context-properties: fill, fill-opacity !important;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.75)) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 160ms linear !important;
+  background-size: 60% !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
 }
 
-html[windowtype="Toolkit:PictureInPicture"] #unpip:hover,
-html[windowtype="Toolkit:PictureInPicture"] #unpip:focus,
-html[windowtype="Toolkit:PictureInPicture"] #unpip:focus-visible,
-html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:hover,
-html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:focus,
-html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:focus-visible {
+html[windowtype="Toolkit:PictureInPicture"] #unpip,
+html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"] {
+  position: absolute !important;
+  left: 2cqi !important;
+  right: auto !important;
+  top: 2cqi !important;
+  bottom: auto !important;
+}
+
+html[windowtype="Toolkit:PictureInPicture"] #playpause {
+  position: fixed !important;
+  left: 2cqi !important;
+  right: auto !important;
+  bottom: 2cqi !important;
+  top: auto !important;
+  grid-area: unset !important;
+}
+
+/* Reveal when controls are hovered, showing, or keying — provided window is active */
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #controls:hover #unpip,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #controls:hover #playpause,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #controls[showing] #unpip,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #controls[showing] #playpause,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #controls[keying] #unpip,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #controls[keying] #playpause {
+  opacity: 0.85 !important;
+  pointer-events: auto !important;
+}
+
+/* Elevated hover/focus for individual buttons when active */
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #unpip:hover,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #unpip:focus,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #unpip:focus-visible,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #unpip[mac="true"]:hover,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #unpip[mac="true"]:focus,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #unpip[mac="true"]:focus-visible,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #playpause:hover,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #playpause:focus,
+html[windowtype="Toolkit:PictureInPicture"]:not(:-moz-window-inactive):not([pip-inactive]) #playpause:focus-visible {
   background-color: transparent !important;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.9)) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* When PiP window is inactive / clicked out, always hide both buttons */
+html[windowtype="Toolkit:PictureInPicture"]:-moz-window-inactive #unpip,
+html[windowtype="Toolkit:PictureInPicture"]:-moz-window-inactive #playpause,
+html[windowtype="Toolkit:PictureInPicture"][pip-inactive] #unpip,
+html[windowtype="Toolkit:PictureInPicture"][pip-inactive] #playpause {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 `;
 
@@ -170,37 +256,100 @@ html[windowtype="Toolkit:PictureInPicture"] #unpip[mac="true"]:focus-visible {
   function forceWidgetSync() {
     try {
       // Nudge AppWindow to re-read customtitlebar / buttonbox metrics.
+      // Do not dispatch resize: a resize listener that calls apply loops forever.
       const root = document.documentElement;
-      const cur = root.getAttribute("chromemargin") || "0,0,0,0";
-      root.setAttribute("chromemargin", cur);
+      root.setAttribute("chromemargin", "0,0,0,0");
       root.setAttribute("customtitlebar", "true");
-      window.dispatchEvent(new Event("resize"));
     } catch (_) {
       /* ignore */
     }
   }
 
+  let applying = false;
+
   function apply() {
-    if (!hideEnabled()) {
+    if (applying || !hideEnabled()) {
       return;
     }
-    ensureRootAttrs();
-    injectCss();
-    ensureHiddenButtonbox();
-    forceWidgetSync();
+    applying = true;
+    try {
+      ensureRootAttrs();
+      injectCss();
+      ensureHiddenButtonbox();
+      forceWidgetSync();
+    } finally {
+      applying = false;
+    }
+  }
+
+  function watchTitlebar() {
+    const root = document.documentElement;
+    if (!root) {
+      return;
+    }
+    const onTitlebarChange = () => {
+      if (!document.getElementById("zen-pip-buttonbox-anchor")) {
+        apply();
+      }
+    };
+    const watch = (titlebar) => {
+      if (!titlebar || titlebar.__zenPipWatch) {
+        return;
+      }
+      titlebar.__zenPipWatch = true;
+      const inner = new MutationObserver(onTitlebarChange);
+      inner.observe(titlebar, { childList: true, subtree: true });
+      onTitlebarChange();
+    };
+    watch(document.getElementById("titlebar"));
+    const outer = new MutationObserver(() => {
+      watch(document.getElementById("titlebar"));
+    });
+    outer.observe(root, { childList: true });
+  }
+
+  function handleBlur() {
+    try {
+      const root = document.documentElement;
+      if (root) {
+        root.setAttribute("pip-inactive", "true");
+      }
+      const controls = document.getElementById("controls");
+      if (controls) {
+        controls.removeAttribute("showing");
+        controls.removeAttribute("keying");
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function handleFocus() {
+    try {
+      const root = document.documentElement;
+      if (root) {
+        root.removeAttribute("pip-inactive");
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  function start() {
+    apply();
+    watchTitlebar();
   }
 
   if (document.readyState === "loading") {
-    window.addEventListener("DOMContentLoaded", apply, { once: true });
+    window.addEventListener("DOMContentLoaded", start, { once: true });
   } else {
-    apply();
+    start();
   }
-  window.setTimeout(apply, 0);
-  window.setTimeout(apply, 100);
-  window.setTimeout(apply, 400);
-  window.setTimeout(apply, 1000);
 
-  // Re-apply when the player rebuilds chrome (fullscreen toggle etc.).
-  window.addEventListener("resize", () => window.setTimeout(apply, 0));
-  window.addEventListener("fullscreenchange", () => window.setTimeout(apply, 0));
+  // Fullscreen rebuilds the titlebar. Apply once; do not listen for resize.
+  window.addEventListener("fullscreenchange", () => {
+    apply();
+  });
+  window.addEventListener("blur", handleBlur);
+  window.addEventListener("focus", handleFocus);
 })();
