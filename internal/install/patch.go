@@ -28,6 +28,20 @@ type Config struct {
 	SkipLaunchAgent bool
 	QuitZen         bool
 	FxChrome        string // set by fx-autoconfig step
+	fxPrefetch      *fxPrefetch
+}
+
+const (
+	quitDeadline = 2 * time.Second
+	quitPoll     = 50 * time.Millisecond
+)
+
+// fxPrefetch downloads fx-autoconfig while ditto copies Zen.app.
+type fxPrefetch struct {
+	done    chan struct{}
+	root    string
+	cleanup func() error
+	err     error
 }
 
 // DefaultConfig fills OS-specific paths.
@@ -66,19 +80,63 @@ func Steps() []Step {
 }
 
 func stepQuitZen(cfg *Config) error {
-	if !cfg.QuitZen {
+	if !cfg.QuitZen || !zenProcessRunning() {
 		return nil
 	}
-	_ = exec.Command("osascript", "-e", `tell application "Zen" to quit`).Run()
+	quitErr := gentleQuitZen()
+	if WaitUntilStopped(quitDeadline, quitPoll, zenProcessRunning) {
+		return nil
+	}
+	forceErr := forceKillZen()
+	if WaitUntilStopped(quitDeadline, quitPoll, zenProcessRunning) {
+		return nil
+	}
+	if forceErr != nil {
+		if quitErr != nil {
+			return fmt.Errorf("quit Zen: %w (force: %v)", quitErr, forceErr)
+		}
+		return fmt.Errorf("force quit Zen: %w", forceErr)
+	}
+	return fmt.Errorf("Zen still running after quit")
+}
+
+// WaitUntilStopped polls running until it reports false or the deadline passes.
+// It returns true when the process is gone.
+func WaitUntilStopped(deadline, interval time.Duration, running func() bool) bool {
+	if running == nil || !running() {
+		return true
+	}
+	timer := time.NewTimer(deadline)
+	defer timer.Stop()
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-timer.C:
+			return !running()
+		case <-ticker.C:
+			if !running() {
+				return true
+			}
+		}
+	}
+}
+
+func gentleQuitZen() error {
+	var first error
+	if err := exec.Command("osascript", "-e", `tell application "Zen" to quit`).Run(); err != nil {
+		first = err
+	}
 	for _, name := range []string{"Zen", "zen", "zen-bin"} {
-		_ = exec.Command("killall", name).Run()
+		if err := exec.Command("killall", name).Run(); err != nil && first == nil {
+			first = err
+		}
 	}
-	time.Sleep(time.Second)
-	if running := zenProcessRunning(); running {
-		_ = exec.Command("killall", "-9", "Zen", "zen-bin").Run()
-		time.Sleep(time.Second)
-	}
-	return nil
+	return first
+}
+
+func forceKillZen() error {
+	return exec.Command("killall", "-9", "Zen", "zen-bin").Run()
 }
 
 func zenProcessRunning() bool {
@@ -101,7 +159,15 @@ func stepCopyApp(cfg *Config) error {
 	if err := os.MkdirAll(cfg.Zen.HomeApplications, 0o755); err != nil {
 		return err
 	}
-	if stock != "" && stock != dst {
+	cache := fxChromeCacheDir(cfg)
+	if !SkipFxDownload(stock, dst, cache) {
+		if err := cfg.beginFxPrefetch(); err != nil {
+			return err
+		}
+	}
+	// /Applications/Zen.app is often a symlink into ~/Applications — never
+	// RemoveAll+ditto when both paths resolve to the same bundle.
+	if !SamePatchedBuild(stock, dst) && stock != "" && !sameResolvedPath(stock, dst) {
 		if err := os.RemoveAll(dst); err != nil {
 			return err
 		}
@@ -115,25 +181,138 @@ func stepCopyApp(cfg *Config) error {
 	return nil
 }
 
-func stepFxAutoconfig(cfg *Config) error {
+// sameResolvedPath is true when both paths exist and EvalSymlinks agrees,
+// or when the string paths are equal. A missing path is not the same bundle.
+func sameResolvedPath(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	if a == b {
+		return true
+	}
+	ra, ea := filepath.EvalSymlinks(a)
+	rb, eb := filepath.EvalSymlinks(b)
+	if ea != nil || eb != nil {
+		return false
+	}
+	return ra == rb
+}
+
+func fxChromeCacheDir(cfg *Config) string {
+	return filepath.Join(cfg.DataDir, "fx-chrome")
+}
+
+func (cfg *Config) beginFxPrefetch() error {
+	if cfg.fxPrefetch != nil {
+		select {
+		case <-cfg.fxPrefetch.done:
+			if cfg.fxPrefetch.err == nil && cfg.fxPrefetch.root != "" {
+				return nil
+			}
+			if cfg.fxPrefetch.cleanup != nil {
+				if err := cfg.fxPrefetch.cleanup(); err != nil {
+					return err
+				}
+				cfg.fxPrefetch.cleanup = nil
+			}
+		default:
+			return nil
+		}
+	}
+	prefetch := &fxPrefetch{done: make(chan struct{})}
+	cfg.fxPrefetch = prefetch
+	go func() {
+		defer close(prefetch.done)
+		prefetch.root, prefetch.cleanup, prefetch.err = fetchFxAutoconfig()
+	}()
+	return nil
+}
+
+func stepFxAutoconfig(cfg *Config) (err error) {
 	dst := HomeZenAppPath(cfg.Zen)
-	tmp, err := os.MkdirTemp("", "zen-pip-fx-*")
+	stock := StockZenAppPath(cfg.Zen)
+	cache := fxChromeCacheDir(cfg)
+	if SkipFxDownload(stock, dst, cache) {
+		cfg.FxChrome = cache
+		return nil
+	}
+
+	root, cleanup, err := takePrefetchedFx(cfg)
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmp)
+	if root == "" {
+		root, cleanup, err = fetchFxAutoconfig()
+		if err != nil {
+			return err
+		}
+	}
+	if cleanup != nil {
+		defer func() {
+			cerr := cleanup()
+			if cerr != nil && err == nil {
+				err = cerr
+			}
+		}()
+	}
+	return installFetchedFx(cfg, dst, root)
+}
 
+func takePrefetchedFx(cfg *Config) (string, func() error, error) {
+	if cfg.fxPrefetch == nil {
+		return "", nil, nil
+	}
+	<-cfg.fxPrefetch.done
+	root := cfg.fxPrefetch.root
+	cleanup := cfg.fxPrefetch.cleanup
+	prefetchErr := cfg.fxPrefetch.err
+	cfg.fxPrefetch = nil
+	if prefetchErr != nil {
+		if cleanup != nil {
+			if cerr := cleanup(); cerr != nil {
+				return "", nil, fmt.Errorf("%w (cleanup: %v)", prefetchErr, cerr)
+			}
+		}
+		return "", nil, prefetchErr
+	}
+	if root == "" || !fileExists(filepath.Join(root, "program", "config.js")) {
+		if cleanup != nil {
+			if cerr := cleanup(); cerr != nil {
+				return "", nil, cerr
+			}
+		}
+		return "", nil, nil
+	}
+	return root, cleanup, nil
+}
+
+func fetchFxAutoconfig() (string, func() error, error) {
+	tmp, err := os.MkdirTemp("", "zen-pip-fx-*")
+	if err != nil {
+		return "", nil, err
+	}
+	cleanup := func() error { return os.RemoveAll(tmp) }
+	fail := func(cause error) (string, func() error, error) {
+		if cerr := cleanup(); cerr != nil {
+			return "", nil, fmt.Errorf("%w (cleanup: %v)", cause, cerr)
+		}
+		return "", nil, cause
+	}
 	zipPath := filepath.Join(tmp, "fx.zip")
 	if err := downloadFile(fxAutoconfigZip, zipPath); err != nil {
-		return fmt.Errorf("download fx-autoconfig: %w", err)
+		return fail(fmt.Errorf("download fx-autoconfig: %w", err))
 	}
 	if err := unzip(zipPath, tmp); err != nil {
-		return fmt.Errorf("unpack fx-autoconfig: %w", err)
+		return fail(fmt.Errorf("unpack fx-autoconfig: %w", err))
 	}
 	fxDir, err := findFxRoot(tmp)
 	if err != nil {
-		return err
+		return fail(err)
 	}
+	return fxDir, cleanup, nil
+}
+
+func installFetchedFx(cfg *Config, dst, fxDir string) error {
 	res := filepath.Join(dst, "Contents", "Resources")
 	if err := copyFile(filepath.Join(fxDir, "program", "config.js"), filepath.Join(res, "config.js")); err != nil {
 		return err
@@ -148,14 +327,14 @@ func stepFxAutoconfig(cfg *Config) error {
 	); err != nil {
 		return err
 	}
-	cfg.FxChrome = filepath.Join(fxDir, "profile", "chrome")
-	// Keep fx chrome for profile merge — copy to DataDir so it survives tmp cleanup.
-	kept := filepath.Join(cfg.DataDir, "fx-chrome")
-	_ = os.RemoveAll(kept)
+	kept := fxChromeCacheDir(cfg)
+	if err := os.RemoveAll(kept); err != nil {
+		return err
+	}
 	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
 		return err
 	}
-	if err := copyDir(cfg.FxChrome, kept); err != nil {
+	if err := copyDir(filepath.Join(fxDir, "profile", "chrome"), kept); err != nil {
 		return err
 	}
 	cfg.FxChrome = kept
