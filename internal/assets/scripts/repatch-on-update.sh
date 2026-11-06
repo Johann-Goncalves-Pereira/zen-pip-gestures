@@ -130,14 +130,34 @@ fi
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"; rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
 
+# Download while ditto copies the app. Both are required once a repatch is needed.
+log "downloading fx-autoconfig"
+curl -fsSL -o "$TMP/fx-autoconfig.zip" \
+  "https://github.com/MrOtherGuy/fx-autoconfig/archive/refs/heads/master.zip" &
+CURL_PID=$!
+
 # Prefer refreshing ~/Applications from the newest stock tree when present.
 mkdir -p "$HOME/Applications"
+copy_status=0
 if [[ -d "$SRC_APP" && ! -L "$SRC_APP" ]]; then
   log "refreshing ~/Applications/Zen.app from /Applications"
   rm -rf "$DST_APP"
-  ditto "$SRC_APP" "$DST_APP"
+  ditto "$SRC_APP" "$DST_APP" || copy_status=$?
 elif [[ ! -d "$DST_APP" && -d "$SRC_APP" ]]; then
-  ditto "$SRC_APP" "$DST_APP"
+  ditto "$SRC_APP" "$DST_APP" || copy_status=$?
+fi
+
+download_status=0
+wait "$CURL_PID" || download_status=$?
+if [[ "$download_status" -ne 0 ]]; then
+  log "error: download failed"
+  notify "$LABEL" "Zen updated but re-patch failed (network). Run ./install.sh"
+  exit 1
+fi
+if [[ "$copy_status" -ne 0 ]]; then
+  log "error: ditto failed ($copy_status)"
+  notify "$LABEL" "Zen updated but re-patch failed (copy). Run ./install.sh"
+  exit "$copy_status"
 fi
 
 if [[ ! -d "$DST_APP" ]]; then
@@ -145,15 +165,6 @@ if [[ ! -d "$DST_APP" ]]; then
   notify "$LABEL" "Could not find Zen.app to re-patch."
   exit 1
 fi
-
-log "downloading fx-autoconfig"
-curl -fsSL -o "$TMP/fx-autoconfig.zip" \
-  "https://github.com/MrOtherGuy/fx-autoconfig/archive/refs/heads/master.zip" \
-  || {
-    log "error: download failed"
-    notify "$LABEL" "Zen updated but re-patch failed (network). Run ./install.sh"
-    exit 1
-  }
 unzip -q "$TMP/fx-autoconfig.zip" -d "$TMP"
 FX="$(find "$TMP" -maxdepth 1 -type d -name 'fx-autoconfig-*' | head -1)"
 if [[ -z "$FX" || ! -f "$FX/program/config.js" ]]; then

@@ -50,6 +50,28 @@
     }
   }
 
+  let cachedMinWidth = DEFAULT_MIN_WIDTH;
+  let cachedMaxWidth = DEFAULT_MAX_WIDTH;
+  let cachedAvail = null;
+
+  function refreshSizePrefs() {
+    cachedMinWidth = prefInt(PREF_MIN, DEFAULT_MIN_WIDTH);
+    cachedMaxWidth = prefInt(PREF_MAX, DEFAULT_MAX_WIDTH);
+  }
+
+  const sizePrefObserver = {
+    observe() {
+      refreshSizePrefs();
+    },
+  };
+  try {
+    Services.prefs.addObserver(PREF_MIN, sizePrefObserver);
+    Services.prefs.addObserver(PREF_MAX, sizePrefObserver);
+  } catch (_) {
+    /* prefs unavailable until the window finishes starting */
+  }
+  refreshSizePrefs();
+
   function masterEnabled() {
     return prefBool(PREF_MASTER, true);
   }
@@ -76,8 +98,11 @@
   }
 
   function availBounds() {
+    if (cachedAvail) {
+      return cachedAvail;
+    }
     const s = window.screen;
-    return {
+    cachedAvail = {
       left: s.availLeft,
       top: s.availTop,
       right: s.availLeft + s.availWidth,
@@ -85,6 +110,7 @@
       width: s.availWidth,
       height: s.availHeight,
     };
+    return cachedAvail;
   }
 
   function clampRect(x, y, w, h) {
@@ -106,13 +132,13 @@
     const a = availBounds();
     const ratio = aspectRatio();
     const hardMax = Math.min(
-      prefInt(PREF_MAX, DEFAULT_MAX_WIDTH),
+      cachedMaxWidth,
       a.width,
       Math.floor(a.height * ratio)
     );
     const hardMin = Math.min(
       hardMax,
-      Math.max(prefInt(PREF_MIN, DEFAULT_MIN_WIDTH), window.minWidth || 0)
+      Math.max(cachedMinWidth, window.minWidth || 0)
     );
     return { hardMin, hardMax, ratio };
   }
@@ -347,6 +373,11 @@
 
   function endGesture() {
     gestureIdleTimer = 0;
+    if (raf) {
+      window.cancelAnimationFrame(raf);
+      raf = 0;
+    }
+    lastTs = 0;
     if (!gestureActive) {
       return;
     }
@@ -434,7 +465,9 @@
   }
 
   function tick(ts) {
-    raf = 0;
+    // Keep raf set through this callback. pinCursorToPipCenter can re-enter
+    // onWheel; scheduleTick then sees the current id and does not queue a
+    // second frame or reset the smoothing clock.
     flushPendingInput();
 
     if (!lastTs) {
@@ -461,20 +494,25 @@
       live.y = target.y;
       live.w = target.w;
       live.h = target.h;
-      applyWindow(live.x, live.y, live.w, live.h, false);
-      lastTs = 0;
-      return;
     }
 
     applyWindow(live.x, live.y, live.w, live.h, false);
+
+    const pending =
+      pendingPanX !== 0 || pendingPanY !== 0 || pendingLogScale !== 0;
+    if (dist < SETTLE_PX && !pending) {
+      lastTs = 0;
+      raf = 0;
+      return;
+    }
     raf = requestAnimationFrame(tick);
   }
 
   function scheduleTick() {
-    if (!raf) {
-      lastTs = 0;
-      raf = requestAnimationFrame(tick);
+    if (raf) {
+      return;
     }
+    raf = requestAnimationFrame(tick);
   }
 
   function queuePan(dx, dy) {
@@ -565,6 +603,10 @@
     noteMagnifyGesture();
     event.preventDefault();
   }
+
+  window.addEventListener("resize", () => {
+    cachedAvail = null;
+  });
 
   window.addEventListener("wheel", onWheel, { passive: false, capture: true });
   window.addEventListener("MozMagnifyGestureStart", onMagnifyStart, true);
